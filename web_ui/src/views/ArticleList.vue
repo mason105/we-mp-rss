@@ -9,11 +9,16 @@
             <a-list :data="mpList" :loading="mpLoading" bordered>
               <template #item="{ item, index }">
                 <a-list-item @click="handleMpClick(item.id)" :class="{ 'active-mp': activeMpId === item.id }"
-                  style="padding: 6px 6px; cursor: pointer; display: flex; align-items: center;">
-                 <img :src="Avatar(item.avatar)" width="40" style="float:left;margin-right:1rem;"/>
-                  <a-typography-text :ellipsis="{ rows: 1 }" strong style="line-height:40px;">
-                    {{ item.name || item.mp_name }}
-                  </a-typography-text>
+                  style="padding: 6px 6px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                 <div style="display: flex; align-items: center;">
+                   <img :src="Avatar(item.avatar)" width="40" style="float:left;margin-right:1rem;"/>
+                   <a-typography-text :ellipsis="{ rows: 1 }" strong style="line-height:40px;">
+                     {{ item.name || item.mp_name }}
+                   </a-typography-text>
+                 </div>
+                 <a-button v-if="activeMpId === item.id" size="mini" type="text" status="danger" @click="$event.stopPropagation(); deleteMp(item.id)">
+                   <template #icon><icon-delete /></template>
+                 </a-button>
                 </a-list-item>
               </template>
             </a-list>
@@ -44,6 +49,10 @@
             <a-button @click="showAuthQrcode">
               <template #icon><icon-scan /></template>
               刷新授权
+            </a-button>
+            <a-button @click="openRssFeed">
+              <template #icon><icon-rss /></template>
+              RSS订阅
             </a-button>
           </a-space>
         </template>
@@ -94,9 +103,10 @@ import axios from 'axios'
 import { getArticles } from '@/api/article'
 import { QRCode, checkQRCodeStatus } from '@/api/auth'
 import { getSubscriptions, UpdateMps } from '@/api/subscription'
-import { Message } from '@arco-design/web-vue'
+import { Message, Modal } from '@arco-design/web-vue'
 import { formatDateTime } from '@/utils/date'
 import router from '@/router'
+import {  deleteMpApi } from '@/api/subscription'
 
 const articles = ref([])
 const loading = ref(false)
@@ -240,6 +250,17 @@ const showAuthQrcode = async () => {
   })
 }
 
+const openRssFeed = () => {
+  if (!activeMpId.value) {
+    Message.warning('请先选择一个公众号')
+    return
+  }
+  const activeMp = mpList.value.find(item => item.id === activeMpId.value)
+  if (activeMp) {
+    window.open(`/api/rss/${activeMpId.value}`, '_blank')
+  }
+}
+
 const closeQrcodeModal = () => {
   qrcodeVisible.value = false
 }
@@ -296,6 +317,27 @@ const fetchMpList = async () => {
     console.error('获取公众号列表错误:', error)
   } finally {
     mpLoading.value = false
+  }
+}
+const deleteMp = async (mpId: string) => {
+  try {
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定要删除该订阅号吗？删除后将无法恢复。',
+      okText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        await deleteMpApi(mpId);
+        Message.success('订阅号删除成功');
+        fetchMpList();
+      },
+      onCancel: () => {
+        Message.info('已取消删除操作');
+      }
+    });
+  } catch (error) {
+    console.error('删除订阅号失败:', error);
+    Message.error('删除订阅号失败，请稍后重试');
   }
 }
 </script>

@@ -607,9 +607,9 @@ vite-plugin-vue-type-imports@^0.1.1:
   resolved "https://registry.npmmirror.com/vite-plugin-vue-type-imports/-/vite-plugin-vue-type-imports-0.1.3.tgz"
   integrity sha512-iF5NgeQc2MZ6wDUS1tnN7rglkWmm+WhK9rCQb3FudsrMTqLazbtN6shyrEcsGBdqYAqH9c5HhiwU3gOIrFcVHA==
 
-vite@^2.9.0:
+vite@^2.9.18:
   version "2.9.18"
-  resolved "https://registry.npmmirror.com/vite/-/vite-2.9.18.tgz"
+  resolved "https://registry.npmmirror.com/vite/-/vite-2.9.18.tgz#74e2a83b29da81e602dac4c293312cc575f091c7"
   integrity sha512-sAOqI5wNM9QvSEE70W3UGMdT8cyEn0+PmJMTFvTB8wB0YbYUWw3gUbY62AOyrXosGieF2htmeLATvNxpv/zNyQ==
   dependencies:
     esbuild "^0.14.27"

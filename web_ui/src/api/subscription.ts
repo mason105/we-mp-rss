@@ -44,6 +44,9 @@ export const getSubscriptionDetail = (mp_id: string) => {
 export const addSubscription = (data: AddSubscriptionParams) => {
   return http.post<{code: number, message: string}>('/wx/mps', data)
 }
+export const deleteMpApi = (mp_id: string) => {
+  return http.delete<{code: number, message: string}>(`/wx/mps/${mp_id}`)
+}
 
 export const deleteSubscription = (mp_id: string) => {
   return http.delete<{code: number, message: string}>(`/wx/mps/${mp_id}`)

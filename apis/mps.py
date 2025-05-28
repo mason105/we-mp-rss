@@ -183,31 +183,43 @@ async def add_mp(
         mpx_id = base64.b64decode(mp_id).decode("utf-8")
         local_avatar_path = f"/{save_avatar_locally(avatar)}"
         
-        # 创建新的Feed记录
-        new_feed = Feed(
-            id=f"MP_WXS_{mpx_id}",
-            mp_name=mp_name,
-            mp_cover= local_avatar_path,
-            mp_intro=mp_intro,
-            status=1,  # 默认启用状态
-            created_at=now,
-            updated_at=now,
-            faker_id=mp_id,
-            update_time=0,
-            sync_time=0,
-        )
+        # 检查公众号是否已存在
+        existing_feed = session.query(Feed).filter(Feed.faker_id == mp_id).first()
         
-        session.add(new_feed)
+        if existing_feed:
+            # 更新现有记录
+            existing_feed.mp_name = mp_name
+            existing_feed.mp_cover = local_avatar_path
+            existing_feed.mp_intro = mp_intro
+            existing_feed.updated_at = now
+        else:
+            # 创建新的Feed记录
+            new_feed = Feed(
+                id=f"MP_WXS_{mpx_id}",
+                mp_name=mp_name,
+                mp_cover= local_avatar_path,
+                mp_intro=mp_intro,
+                status=1,  # 默认启用状态
+                created_at=now,
+                updated_at=now,
+                faker_id=mp_id,
+                update_time=0,
+                sync_time=0,
+            )
+            session.add(new_feed)
+        
         session.commit()
         
+        feed = existing_feed if existing_feed else new_feed
+        
         return success_response({
-            "id": new_feed.id,
-            "mp_name": new_feed.mp_name,
-            "mp_cover": new_feed.mp_cover,
-            "mp_intro": new_feed.mp_intro,
-            "status": new_feed.status,
+            "id": feed.id,
+            "mp_name": feed.mp_name,
+            "mp_cover": feed.mp_cover,
+            "mp_intro": feed.mp_intro,
+            "status": feed.status,
             "faker_id":mp_id,
-            "created_at": new_feed.created_at.isoformat()
+            "created_at": feed.created_at.isoformat()
         })
     except Exception as e:
         session.rollback()
@@ -249,3 +261,40 @@ def save_avatar_locally(avatar_url):
         print(f"保存头像失败: {str(e)}")
         return None
 
+
+@router.delete("/{mp_id}", summary="删除订阅号")
+async def delete_mp(
+    mp_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    session = DB.get_session()
+    try:
+        from core.models.feed import Feed
+        mp = session.query(Feed).filter(Feed.id == mp_id).first()
+        if not mp:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_response(
+                    code=40401,
+                    message="订阅号不存在"
+                )
+            )
+        
+        session.delete(mp)
+        session.commit()
+        return success_response({
+            "message": "订阅号删除成功",
+            "id": mp_id
+        })
+    except Exception as e:
+        session.rollback()
+        print(f"删除订阅号错误: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail=error_response(
+                code=50001,
+                message="删除订阅号失败"
+            )
+        )
+    finally:
+        session.close()

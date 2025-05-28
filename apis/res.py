@@ -17,7 +17,11 @@ async def reverse_proxy(request: Request, path: str):
     host="mmbiz.qpic.cn"
     domain=f"http://{host}"
     if not path.startswith(domain):
-        raise HTTPException(status_code=403, detail=f"只允许 {domain} 开头的请求")
+        return Response(
+        content="只允许访问微信公众号图标，请使用正确的域名。",
+        status_code=301,
+        headers={"Location":path},
+    )
     
     # 生成缓存文件名
     cache_key = f"{request.method}_{path}".encode('utf-8')
@@ -67,16 +71,17 @@ async def reverse_proxy(request: Request, path: str):
     status_code = resp.status_code
     headers = dict(resp.headers)
     media_type = resp.headers.get("Content-Type")
-    
-    # 缓存响应
-    with open(cache_filename, 'wb') as f:
-        f.write(content)
-    
-    # 缓存响应头
-    headers_filename = cache_filename + ".headers"
-    with open(headers_filename, 'w', encoding='utf-8') as f:
-        json.dump(headers, f)
-    
+    try:
+        # 缓存响应
+        with open(cache_filename, 'wb') as f:
+            f.write(content)
+        
+        # 缓存响应头
+        headers_filename = cache_filename + ".headers"
+        with open(headers_filename, 'w', encoding='utf-8') as f:
+            json.dump(headers, f)
+    except Exception as e:
+        print(f"缓存响应失败: {str(e)}")    
     return Response(
         content=content,
         status_code=status_code,
