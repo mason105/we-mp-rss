@@ -51,7 +51,7 @@
               刷新授权
             </a-button>
             <a-button @click="openRssFeed">
-              <template #icon><icon-rss /></template>
+              <template #icon><IconWifi /></template>
               RSS订阅
             </a-button>
           </a-space>
@@ -100,6 +100,7 @@
 import { Avatar } from '@/utils/constants'
 import { ref, onMounted, h } from 'vue'
 import axios from 'axios'
+import { IconApps, IconAtt, IconDelete, IconRefresh, IconScan, IconWeiboCircleFill } from '@arco-design/web-vue/es/icon'
 import { getArticles } from '@/api/article'
 import { QRCode, checkQRCodeStatus } from '@/api/auth'
 import { getSubscriptions, UpdateMps } from '@/api/subscription'

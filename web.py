@@ -7,6 +7,7 @@ from apis.user import router as user_router
 from apis.article import router as article_router
 from apis.mps import router as wx_router
 from apis.res import router as res_router
+from apis.rss import router as rss_router
 import os
 
 app = FastAPI(
@@ -35,10 +36,12 @@ api_router.include_router(article_router)
 api_router.include_router(wx_router)
 resource_router = APIRouter(prefix="/static")
 resource_router.include_router(res_router)
-
+feeds_router = APIRouter()
+feeds_router.include_router(rss_router)
 # 注册API路由分组
 app.include_router(api_router)
 app.include_router(resource_router)
+app.include_router(feeds_router)
 
 # 静态文件服务配置
 app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
