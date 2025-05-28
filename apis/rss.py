@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from fastapi import status
+from fastapi.responses import Response
 from core.db import DB
-from core.rss import generate_rss
+from core.rss import RSS
 from core.models.feed import Feed
 from .base import success_response, error_response
 from core.auth import get_current_user
@@ -15,6 +16,13 @@ async def get_rss_feeds(
     offset: int = Query(0, ge=0),
     # current_user: dict = Depends(get_current_user)
 ):
+    rss = RSS(name="all")
+    rss_xml=rss.get_rss()
+    if rss_xml is not None:
+         return Response(
+            content=rss_xml,
+            media_type="application/xml"
+        )
     session = DB.get_session()
     try:
         total = session.query(Feed).count()
@@ -29,9 +37,8 @@ async def get_rss_feeds(
         } for feed in feeds]
         
         # 生成RSS XML
-        rss_xml = generate_rss(rss_list,rss_file="all.xml", title="WeRSS订阅")
+        rss_xml = rss.generate_rss(rss_list, title="WeRSS订阅")
         
-        from fastapi.responses import Response
         return Response(
             content=rss_xml,
             media_type="application/xml"
@@ -56,6 +63,13 @@ async def get_mp_articles_rss(
     offset: int = Query(0, ge=0),
     # current_user: dict = Depends(get_current_user)
 ):
+    rss=RSS(name=feed_id)
+    rss_xml = rss.get_rss()
+    if rss_xml is not None:
+         return Response(
+            content=rss_xml,
+            media_type="application/xml"
+        )
     session = DB.get_session()
     try:
         from core.models.article import Article
@@ -86,9 +100,8 @@ async def get_mp_articles_rss(
         } for article in articles]
         
         # 生成RSS XML
-        rss_xml = generate_rss(rss_list, title=f"{feed.mp_name}",rss_file=f'{feed.id}.xml')
+        rss_xml = rss.generate_rss(rss_list, title=f"{feed.mp_name}")
         
-        from fastapi.responses import Response
         return Response(
             content=rss_xml,
             media_type="application/xml"
