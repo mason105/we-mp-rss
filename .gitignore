@@ -2,7 +2,5 @@ __pycache__
 *.xml
 config.yaml
 *.pyc
-static/cache/
-static/avatars/
 dock_build.bat
 db.db
