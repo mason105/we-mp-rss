@@ -1,5 +1,5 @@
 
-FROM ghcr.io/rachelos/rachel_base_os:latest
+FROM  ghcr.io/rachelos/python38:latest
 # 安装系统依赖
 WORKDIR /app
 
