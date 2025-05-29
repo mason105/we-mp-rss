@@ -1,4 +1,4 @@
-FROM docker.1ms.run/ubuntu:20.04
+FROM ghcr.io/rachelos/rachel_base_os:latest
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV DEBIAN_FRONTEND=noninteractive
