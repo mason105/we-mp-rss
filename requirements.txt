@@ -34,6 +34,7 @@ sqlalchemy==2.0.40
 starlette==0.44.0
 tqdm==4.67.1
 trio==0.27.0
+httpx==0.28.1
 trio-websocket==0.12.2
 typing-extensions==4.13.2
 urllib3==2.2.3
