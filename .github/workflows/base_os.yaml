@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:  # 仅在指定文件变化时触发（可选）
-      - 'script/Dockerfile'
+      - 'Dockerfiles/py38'
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -18,7 +18,7 @@ jobs:
         run: cat /home/runner/.docker/config.json    
       - name: Build Docker Image
         run: |
-          cd script
+          cd Dockerfiles/py38
           docker build -t ghcr.io/rachelos/python38:latest .
       - name: Push Docker Image
         run: docker push  ghcr.io/rachelos/python38:latest

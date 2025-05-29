@@ -1,4 +1,4 @@
-FROM ghcr.io/rachelos/rachel_base_os:latest
+FROM ubuntu:20.04
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV DEBIAN_FRONTEND=noninteractive
@@ -7,12 +7,7 @@ RUN apt install -y python3
 RUN apt install -y python3-pip
 
 
-
-
 # 自动设置时区（如上海）
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN apt install -y --no-install-recommends firefox 
 
-#安装系统依赖
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
