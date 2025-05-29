@@ -24,18 +24,18 @@ def Success(data):
     else:
             print("\n登录失败，请检查上述错误信息")
 @router.get("/qr/code", summary="获取登录二维码")
-async def get_qrcode():
+async def get_qrcode(current_user=Depends(get_current_user)):
     code_url=WX_API.GetCode(Success)
     return success_response(code_url)
 @router.get("/qr/image", summary="获取登录二维码图片")
-async def qr_image():
+async def qr_image(current_user=Depends(get_current_user)):
     return success_response(WX_API.GetHasCode())
 
 @router.get("/qr/status",summary="获取扫描状态")
-async def qr_status():
+async def qr_status(current_user=Depends(get_current_user)):
      return success_response(WX_API.HasLogin)    
 @router.get("/qr/over",summary="扫码完成")
-async def qr_success():
+async def qr_success(current_user=Depends(get_current_user)):
      return success_response(WX_API.Close())    
 @router.post("/login", summary="用户登录")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):

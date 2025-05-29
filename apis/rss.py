@@ -7,18 +7,27 @@ from core.models.feed import Feed
 from .base import success_response, error_response
 from core.auth import get_current_user
 
-router = APIRouter(prefix="/rss")
+router = APIRouter(prefix="/rss",tags=["RSS源"])
+@router.get("/fresh", summary="更新并获取RSS订阅列表")
+async def update_rss_feeds( 
+    request: Request,
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: dict = Depends(get_current_user)
+):
+    return await get_rss_feeds(request=request, limit=limit,offset=offset, is_update=True)
 
 @router.get("", summary="获取RSS订阅列表")
 async def get_rss_feeds(
     request: Request,
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    is_update:bool=False,
     # current_user: dict = Depends(get_current_user)
 ):
-    rss = RSS(name="all")
+    rss=RSS(name=f'all_{limit}_{offset}')
     rss_xml=rss.get_rss()
-    if rss_xml is not None:
+    if rss_xml is not None  and is_update==False:
          return Response(
             content=rss_xml,
             media_type="application/xml"
@@ -37,7 +46,7 @@ async def get_rss_feeds(
         } for feed in feeds]
         
         # 生成RSS XML
-        rss_xml = rss.generate_rss(rss_list, title="WeRSS订阅")
+        rss_xml = rss.generate_rss(rss_list, title="WeRSS订阅",others={"total": str(total),"offset": str(offset),"limit": str(limit)})
         
         return Response(
             content=rss_xml,
@@ -55,17 +64,28 @@ async def get_rss_feeds(
     finally:
         session.close()
 
-@router.get("/{feed_id}", summary="获取公众号文章RSS")
-async def get_mp_articles_rss(
+@router.api_route("/{feed_id}/fresh", summary="更新并获取公众号文章RSS")
+async def update_rss_feeds( 
     request: Request,
     feed_id: str,
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     # current_user: dict = Depends(get_current_user)
 ):
-    rss=RSS(name=feed_id)
+    return await get_mp_articles_rss(request=request,feed_id=feed_id, limit=limit,offset=offset, is_update=True)
+
+@router.get("/{feed_id}", summary="获取公众号文章RSS")
+async def get_mp_articles_rss(
+    request: Request,
+    feed_id: str,
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    is_update:bool=False
+    # current_user: dict = Depends(get_current_user)
+):
+    rss=RSS(name=f'{feed_id}_{limit}_{offset}')
     rss_xml = rss.get_rss()
-    if rss_xml is not None:
+    if rss_xml is not None and is_update==False:
          return Response(
             content=rss_xml,
             media_type="application/xml"
@@ -100,7 +120,7 @@ async def get_mp_articles_rss(
         } for article in articles]
         
         # 生成RSS XML
-        rss_xml = rss.generate_rss(rss_list, title=f"{feed.mp_name}")
+        rss_xml = rss.generate_rss(rss_list, title=f"{feed.mp_name}",others={"total": str(total),"offset": str(offset),"limit": str(limit)})
         
         return Response(
             content=rss_xml,

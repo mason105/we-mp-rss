@@ -23,11 +23,21 @@ export default defineConfig(({ command, mode }) => {
       assetsDir: "assets",
     },
     server: {
+      host: "0.0.0.0",
+      port: 3000,
       proxy: {
         "/static": {
-          target: "http://localhost:8001",
+          target: env.VITE_API_BASE_URL,
           changeOrigin: true,
           // rewrite: (path) => path.replace(/^\/static/, ""),
+        },
+        "/rss": {
+          target: env.VITE_API_BASE_URL,
+          changeOrigin: true,
+        },
+        "/api": {
+          target: env.VITE_API_BASE_URL,
+          changeOrigin: true,
         },
       },
     },

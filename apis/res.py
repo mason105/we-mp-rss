@@ -16,6 +16,7 @@ router = APIRouter(prefix="/res", tags=["资源反向代理"])
 async def reverse_proxy(request: Request, path: str):
     host="mmbiz.qpic.cn"
     domain=f"http://{host}"
+    path=path.replace("https://", "http://")
     if not path.startswith(domain):
         return Response(
         content="只允许访问微信公众号图标，请使用正确的域名。",

@@ -25,7 +25,7 @@ class RSS:
             return None 
     def generate_rss(self,rss_list: dict, title: str = "Mp-We-Rss", 
                     author: str = "Rachel", link: str = "https://github.com/rachelos/we-mp-rss",
-                    description: str = "RSS频道", language: str = "zh-CN"):
+                    description: str = "RSS频道", language: str = "zh-CN",others: dict = None):
         # 创建根元素(RSS标准)
         rss = ET.Element("feed", version="2.0")
         rss.attrib["xmlns"] = "http://www.w3.org/2005/Atom"
@@ -37,7 +37,9 @@ class RSS:
         ET.SubElement(rss, "lastBuildDate").text = self.serialize_datetime(datetime.now().isoformat())
         author_elem = ET.SubElement(rss, "author")
         ET.SubElement(author_elem, "name").text = author
-
+        if others is not None:
+            for key, value in others.items():
+                ET.SubElement(rss, key).text = value
         # 添加项目条目(取消注释并修改为RSS标准)
         for rss_item in rss_list:
             item = ET.SubElement(rss, "entity")

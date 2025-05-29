@@ -3,7 +3,7 @@ from core.auth import get_current_user
 from core.db import DB
 
 router = APIRouter(prefix=f"/articles", tags=["文章管理"])
-@router.get("", summary="获取文章列表")
+@router.api_route("", summary="获取文章列表",methods= ["GET", "POST"])
 async def get_articles(
     offset: int = Query(0, ge=0),
     limit: int = Query(5, ge=1, le=100),
@@ -28,7 +28,6 @@ async def get_articles(
             query = query.filter(
                 or_(
                     Article.title.ilike(f"%{search}%"),
-                    Article.content.ilike(f"%{search}%")
                 )
             )
         
@@ -42,9 +41,24 @@ async def get_articles(
                        .limit(limit)\
                        .all()
         
+        # 查询公众号名称
+        from core.models.feed import Feed
+        mp_names = {}
+        for article in articles:
+            if article.mp_id and article.mp_id not in mp_names:
+                feed = session.query(Feed).filter(Feed.id == article.mp_id).first()
+                mp_names[article.mp_id] = feed.mp_name if feed else "未知公众号"
+        
+        # 合并公众号名称到文章列表
+        article_list = []
+        for article in articles:
+            article_dict = article.__dict__
+            article_dict["mp_name"] = mp_names.get(article.mp_id, "未知公众号")
+            article_list.append(article_dict)
+        
         from .base import success_response
         return success_response({
-            "list": articles,
+            "list": article_list,
             "total": total
         })
     finally:
@@ -77,7 +91,7 @@ async def get_article_detail(
 
 @router.delete("/{article_id}", summary="删除文章")
 async def delete_article(
-    article_id: int,
+    article_id: str,
     current_user: dict = Depends(get_current_user)
 ):
     session = DB.get_session()

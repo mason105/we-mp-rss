@@ -1,24 +1,31 @@
 <template>
+  <a-spin :loading="fullLoading" tip="正在刷新..." size="large">
   <a-layout class="article-list">
     <a-layout-sider :width=380
       :style="{ background: '#fff', padding: '0', borderRight: '1px solid #eee', display: 'flex', flexDirection: 'column' }">
       <a-card :bordered="false" title="公众号列表"
         :headStyle="{ padding: '12px 16px', borderBottom: '1px solid #eee', position: 'fixed', top: 0, background: '#fff', zIndex: 1 }">
+        <template #extra>
+          <a-button type="primary" @click="showAddModal">
+            <template #icon><icon-plus /></template>
+            添加订阅
+          </a-button>
+        </template>
         <div style="display: flex; flex-direction: column; height: calc(100vh - 150px); background: #fff">
           <div style="flex: 1; overflow: auto">
             <a-list :data="mpList" :loading="mpLoading" bordered>
               <template #item="{ item, index }">
                 <a-list-item @click="handleMpClick(item.id)" :class="{ 'active-mp': activeMpId === item.id }"
-                  style="padding: 6px 6px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                  style="padding: 12px 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
                  <div style="display: flex; align-items: center;">
                    <img :src="Avatar(item.avatar)" width="40" style="float:left;margin-right:1rem;"/>
-                   <a-typography-text :ellipsis="{ rows: 1 }" strong style="line-height:40px;">
+                   <a-typography-text  strong style="line-height:40px;">
                      {{ item.name || item.mp_name }}
                    </a-typography-text>
-                 </div>
-                 <a-button v-if="activeMpId === item.id" size="mini" type="text" status="danger" @click="$event.stopPropagation(); deleteMp(item.id)">
-                   <template #icon><icon-delete /></template>
-                 </a-button>
+                   <a-button v-if="activeMpId === item.id" size="mini" type="text" status="danger" @click="$event.stopPropagation(); deleteMp(item.id)" >
+                     <template #icon><icon-delete /></template>
+                    </a-button>
+                  </div>
                 </a-list-item>
               </template>
             </a-list>
@@ -27,7 +34,6 @@
             <a-pagination v-model:current="mpPagination.current" v-model:page-size="mpPagination.pageSize"
               :total="mpPagination.total" :page-size-options="mpPagination.pageSizeOptions"
               jump-next jump-prev show-quick-jumper :show-size-changer="true" size="small" show-total="true"
-
               @change="handleMpPageChange" />
           </div>
         </div>
@@ -35,13 +41,11 @@
     </a-layout-sider>
 
     <a-layout-content :style="{ padding: '20px' }">
-      <a-page-header title="文章列表" subtitle="管理您的公众号订阅内容" :show-back="false">
-        <template #extra>
+      <a-page-header 
+      :title="activeFeed ? activeFeed.name : '文章列表'" 
+      :subtitle="activeFeed ? '管理 ' + activeFeed.name + ' 的内容' : '管理您的公众号订阅内容'" :show-back="false">
+          <template #extra>
           <a-space>
-            <a-button type="primary" @click="showAddModal">
-              <template #icon><icon-plus /></template>
-              添加订阅
-            </a-button>
             <a-button @click="refresh">
               <template #icon><icon-refresh /></template>
               刷新
@@ -72,7 +76,7 @@
 
       <a-card>
         <div class="search-bar">
-          <a-input-search v-model="searchText" placeholder="搜索文章标题" @search="handleSearch" allow-clear />
+          <a-input-search v-model="searchText" placeholder="搜索文章标题" @search="handleSearch" @keyup.enter="handleSearch" allow-clear />
         </div>
 
         <a-table :columns="columns" :data="articles" :loading="loading" :pagination="pagination"
@@ -83,25 +87,28 @@
             </a-tag>
           </template>
           <template #actions="{ record }">
-            <a-button type="text" @click="editArticle(record.id)">
-              编辑
-            </a-button>
-            <a-button type="text" status="danger" @click="deleteArticle(record.id)">
-              删除
-            </a-button>
+            <a-space>
+              <a-button type="text" @click="viewArticle(record.url)">
+                <template #icon><icon-eye /></template>
+              </a-button>
+              <a-button type="text" status="danger" @click="deleteArticle(record.id)">
+                <template #icon><icon-delete /></template>
+              </a-button>
+            </a-space>
           </template>
         </a-table>
       </a-card>
     </a-layout-content>
   </a-layout>
+</a-spin>
 </template>
 
 <script setup lang="ts">
 import { Avatar } from '@/utils/constants'
 import { ref, onMounted, h } from 'vue'
 import axios from 'axios'
-import { IconApps, IconAtt, IconDelete, IconRefresh, IconScan, IconWeiboCircleFill } from '@arco-design/web-vue/es/icon'
-import { getArticles } from '@/api/article'
+import { IconApps, IconAtt, IconDelete, IconEdit, IconEye, IconRefresh, IconScan, IconWeiboCircleFill, IconWifi } from '@arco-design/web-vue/es/icon'
+import { getArticles,deleteArticle as deleteArticleApi  } from '@/api/article'
 import { QRCode, checkQRCodeStatus } from '@/api/auth'
 import { getSubscriptions, UpdateMps } from '@/api/subscription'
 import { Message, Modal } from '@arco-design/web-vue'
@@ -149,6 +156,16 @@ const statusColorMap = {
 }
 
 const columns = [
+  //  {
+  //   title: '题图',
+  //   dataIndex: 'title',
+  //   ellipsis: true,
+  //   width: '8%',
+  //   render: ({ record }) => h('img', {
+  //     src: Avatar(record.pic_url),
+  //     style: { width:"160px",height:"80px","object-fit":"cover"}
+  //   }, record.title)
+  // },
   {
     title: '文章标题',
     dataIndex: 'title',
@@ -161,13 +178,31 @@ const columns = [
     }, record.title)
   },
   {
+    title: '公众号',
+    dataIndex: 'mp_id',
+    width: '10%',
+    ellipsis: true,
+    render: ({ record }) => {
+      const mp = mpList.value.find(item => item.id === record.mp_id);
+      return h('span', {
+        style: { color: 'var(--color-text-3)' }
+      }, record.mp_name||mp?.name || record.mp_id)
+    }
+  },
+  {
     title: '发布时间',
     dataIndex: 'created_at',
-    width: '30%',
+    width: '10%',
     render: ({ record }) => h('span',
       { style: { color: 'var(--color-text-3)', fontSize: '12px' } },
       formatDateTime(record.created_at)
     )
+  },
+  {
+    title: '操作',
+    dataIndex: 'actions',
+    width: '120px',
+    slotName: 'actions'
   }
 ]
 
@@ -175,10 +210,13 @@ const handleMpPageChange = (page: number) => {
   mpPagination.value.current = page
   fetchMpList()
 }
-
+const activeFeed=ref()
 const handleMpClick = (mpId: string) => {
   activeMpId.value = mpId
   pagination.value.current = 1
+  activeFeed.value=mpList.value.find(item => item.id === activeMpId.value)
+  console.log(activeFeed.value)
+
   fetchArticles()
 }
 
@@ -253,12 +291,12 @@ const showAuthQrcode = async () => {
 
 const openRssFeed = () => {
   if (!activeMpId.value) {
-    Message.warning('请先选择一个公众号')
+    window.open(`/rss`, '_blank')
     return
   }
   const activeMp = mpList.value.find(item => item.id === activeMpId.value)
   if (activeMp) {
-    window.open(`/api/rss/${activeMpId.value}`, '_blank')
+    window.open(`/rss/${activeMpId.value}`, '_blank')
   }
 }
 
@@ -266,9 +304,14 @@ const closeQrcodeModal = () => {
   qrcodeVisible.value = false
 }
 
+const fullLoading = ref(false)
+
 const refresh = () => {
+  fullLoading.value = true
   UpdateMps(activeMpId.value).then(() => {
     Message.success('刷新成功')
+  }).finally(() => {
+    fullLoading.value = false
   })
   fetchArticles()
 }
@@ -281,12 +324,27 @@ const handleAddSuccess = () => {
   fetchArticles()
 }
 
-const editArticle = (id: number) => {
-  // 编辑逻辑
+
+const viewArticle = (url: string) => {
+  window.open(`${url}`, '_blank')
+
 }
 
 const deleteArticle = (id: number) => {
-  // 删除逻辑
+  Modal.confirm({
+    title: '确认删除',
+    content: '确定要删除该文章吗？删除后将无法恢复。',
+    okText: '确认',
+    cancelText: '取消',
+    onOk: async () => {
+      await deleteArticleApi(id);
+      Message.success('删除成功');
+      fetchArticles();
+    },
+    onCancel: () => {
+      Message.info('已取消删除操作');
+    }
+  });
 }
 
 onMounted(() => {
