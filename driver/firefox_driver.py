@@ -151,7 +151,8 @@ class FirefoxController:
                 if not versions:
                     raise Exception("无法从华为云镜像获取geckodriver版本")
                 latest_version = sorted(versions, key=lambda v: [int(n) for n in v.split('.')])[-1]
-                
+                # 最新版本
+                print(f"最新版本: {latest_version}")
                 # 确定平台和文件后缀
                 if self.system == "windows":
                     platform_name = "win64"

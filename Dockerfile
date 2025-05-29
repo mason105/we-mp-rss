@@ -6,25 +6,22 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update
 RUN apt install -y python3 
 RUN apt install -y python3-pip
+
 # 自动设置时区（如上海）
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 RUN apt install -y --no-install-recommends firefox 
 
 
 FROM base
-
 # 安装系统依赖
-
 WORKDIR /app
-
 
 RUN export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 # 复制Python依赖文件
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-
 # 复制后端代码
 COPY . .
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 RUN rm -rf ./web_ui
 RUN rm -rf ./venv
