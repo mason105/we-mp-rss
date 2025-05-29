@@ -1,9 +1,9 @@
 @echo off
 chcp 65001
 REM 读取Python配置文件中的版本号
-@REM cd web_ui
-@REM call build.bat
-@REM cd ../
+cd web_ui
+call build.bat
+cd ../
 
 for /f "tokens=1 delims==" %%v in ('python -c "from core.ver import VERSION; print(VERSION)"') do set VERSION=%%v
 set tag="v%VERSION%"
