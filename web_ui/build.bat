@@ -8,4 +8,5 @@ npm run build
 
 :: 复制文件到static目录
 echo 正在复制构建文件到%TARGET_DIR%...
+rmdir /s /q %TARGET_DIR%
 xcopy "%DIST_DIR%" "%TARGET_DIR%" /E /Y /I
