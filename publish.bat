@@ -15,6 +15,6 @@ if exist %version_file% (
 echo %comment%
 git add .
 git tag  "v%VERSION%" -m "%comment%"
-git commit -m "%comment%"
+git commit -m "%VERSION%"
 git push -u origin main 
 git push origin  %tag%

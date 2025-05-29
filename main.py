@@ -12,5 +12,5 @@ if __name__ == '__main__':
         #如果没有用户，就创建一个
         init.init()
         print('初始化完成')
-    uvicorn.run("web:app", host="0.0.0.0", port=8001, reload=True,reload_excludes=['static','web_ui'])
+    uvicorn.run("web:app", host="0.0.0.0", port=int(cfg.get("port",8001)), reload=True,reload_excludes=['static','web_ui'])
     pass
