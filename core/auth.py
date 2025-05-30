@@ -7,7 +7,7 @@ from typing import Optional
 from passlib.context import CryptContext
 from core.models import User as DBUser
 from core.db import DB
-from core.config import  cfg
+from core.config import  cfg,API_BASE
 # 配置
 SECRET_KEY = cfg.get("secret","csol2025")  # 生产环境应使用更安全的密钥
 ALGORITHM = "HS256"
@@ -15,7 +15,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # 密码哈希上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{API_BASE}/auth/token",auto_error=False)
 
 def get_user(username: str) -> Optional[DBUser]:
     """从数据库获取用户"""

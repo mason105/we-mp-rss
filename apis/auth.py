@@ -57,6 +57,30 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
     })
+
+
+@router.post("/token",summary="获取Token")
+async def getToken(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=error_response(
+                code=40101,
+                message="用户名或密码错误"
+            )
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    }
+
+
 @router.post("/logout", summary="用户注销")
 async def logout(current_user: dict = Depends(get_current_user)):
     return {"code": 0, "message": "注销成功"}

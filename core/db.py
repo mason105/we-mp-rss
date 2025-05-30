@@ -4,9 +4,9 @@ from sqlalchemy import Column, Integer, String, DateTime
 from typing import Optional, List
 from .models import Feed, Article
 from .config import cfg
-
+from core.models.base import Base  
 # 声明基类
-Base = declarative_base()
+# Base = declarative_base()
 
 class Db:
     def __init__(self):
@@ -19,17 +19,13 @@ class Db:
             self.engine = create_engine(con_str)
             Session = sessionmaker(bind=self.engine)
             self.session = Session()
-            
-            # 自动创建表
-            # self.create_tables()
-          
         except Exception as e:
             print(f"Error creating database connection: {e}")
             raise
     def create_tables(self):
         """Create all tables defined in models"""
         from core.models.base import Base as B # 导入所有模型
-        B.metadata.create_all(self.engine)
+        Base.metadata.create_all(self.engine)
         print('All Tables Created Successfully!')    
         
     def close(self) -> None:

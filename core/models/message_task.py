@@ -1,7 +1,7 @@
 # 从 base 模块导入 Base 基类
 from .base import Base
 # 从 sqlalchemy 导入所需的列类型和数据类型
-from sqlalchemy import Column, Integer, String, DateTime,JSON
+from sqlalchemy import Column, Integer, String, DateTime,JSON,Text
 # 从 datetime 模块导入 datetime 类，用于处理日期和时间
 from datetime import datetime
 
@@ -13,7 +13,7 @@ class MessageTask(Base):
     # 定义 id 字段，作为主键，同时创建索引
     id = Column(Integer, primary_key=True, index=True)
     # 定义消息模板字段，不允许为空
-    message_template = Column(String(500), nullable=False)
+    message_template = Column(Text, nullable=False)
     # 定义发送接口
     web_hook_url = Column(String(500), nullable=False)
     # 定义需要通知的微信公众号ID集合

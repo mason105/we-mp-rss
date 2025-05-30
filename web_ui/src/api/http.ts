@@ -31,7 +31,11 @@ http.interceptors.response.use(
   response => {
     // 处理标准响应格式
     if (response.data?.code === 0) {
-      return response.data.data||response.data.detail
+      return response.data?.data||response.data?.detail||response.data||response
+    }
+    if(response.data?.code==401){
+      router.push("/login")
+      return Promise.reject("未登录或登录已过期，请重新登录。")
     }
     const data=response.data?.detail||response.data
     const errorMsg = data?.message || '请求失败'

@@ -1,9 +1,11 @@
 <template>
   <a-layout>
-    <!-- <Navbar /> -->
-    <a-layout-content>
-      <router-view />
-    </a-layout-content>
+    <Navbar />
+    <a-layout>
+      <a-layout-content>
+        <router-view />
+      </a-layout-content>
+    </a-layout>
   </a-layout>
 </template>
 

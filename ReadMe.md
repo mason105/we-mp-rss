@@ -14,6 +14,12 @@ http://<您的ip>:8001/  即可开启
 
 一个用于订阅和管理微信公众号内容的工具，提供RSS订阅功能。
 
+<p align="center">
+  <a href="https://github.com/DIYgod/sponsors">
+    <img src="https://raw.githubusercontent.com/DIYgod/sponsors/main/sponsors.wide.svg" />
+  </a>
+</p>
+
 ## 功能特性
 
 - 微信公众号内容抓取和解析

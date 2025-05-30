@@ -113,33 +113,28 @@ const rules = {
 }
 
 const handleUploadChange = async (options: any) => {
-  const { file } = options
+  const file = options.fileItem?.file || options.file
   
   // 文件类型验证
-  if (!file.file.type.startsWith('image/')) {
+  if (!file?.type?.startsWith('image/')) {
     Message.error('请选择图片文件 (JPEG/PNG)')
     return
   }
 
   // 文件大小验证 (2MB)
-  if (file.file.size > 2 * 1024 * 1024) {
+  if (file.size > 2 * 1024 * 1024) {
     Message.error('图片大小不能超过2MB')
     return
   }
 
   try {
-    Message.loading('正在上传头像...')
-    const formData = new FormData()
-    formData.append('avatar', file.file)
-    const res = await uploadAvatar(formData)
-    form.value.avatar = res.data.avatar
-    Message.success('头像上传成功')
+    const res = await uploadAvatar(file)
+    form.value.avatar = res.avatar
   } catch (error) {
     console.error('上传错误:', error)
     Message.error(`上传失败: ${error.response?.data?.message || error.message || '服务器错误'}`)
-  } finally {
-    Message.clear()
-  }
+  } 
+  return false
 }
 
 const handleExceed = () => {
@@ -152,15 +147,13 @@ const handleUploadError = (error: Error) => {
 
 const handleImageError = (e: Event) => {
   const img = e.target as HTMLImageElement
-  img.src = '/vite.svg'
+  img.src = '/default-avatar.png'
 }
 
 const fetchUserInfo = async () => {
   loading.value = true
   try {
     const res = await getUserInfo()
-    console.log('用户信息响应:', res) // 调试日志
-    console.log('用户信息:', res)
     form.value = {
       username: res.username,
       nickname: res.nickname || res.username,
@@ -171,10 +164,7 @@ const fetchUserInfo = async () => {
             : `${import.meta.env.VITE_API_BASE_URL}${res.avatar}`)
         : `${import.meta.env.VITE_API_BASE_URL}/assets/avatar.svg`
     }
-    console.log('表单数据:', form.value)
-    console.log('表单数据:', form.value) // 调试日志
   } catch (error) {
-    Message.error(`获取用户信息失败: ${error.message || '未知错误'}`)
     router.push('/login')
   } finally {
     loading.value = false
@@ -182,26 +172,10 @@ const fetchUserInfo = async () => {
 }
 
 const handleSubmit = async () => {
-  loading.value = true
-  try {
-    Message.loading('正在更新信息...')
-    await updateUserInfo(form.value)
-    Message.success('信息更新成功')
-    // 更新本地用户信息
-    const res = await getUserInfo()
-    form.value = {
-      username: res.data.username,
-      nickname: res.data.nickname || '',
-      email: res.data.email || '',
-      avatar: res.data.avatar || ''
+    let response=await updateUserInfo(form.value)
+    if (response.code === 0){
+      Message.success(response?.message || '更新成功')
     }
-  } catch (error) {
-    console.error('更新错误:', error)
-    Message.error(`更新失败: ${error.response?.data?.message || error.message || '服务器错误'}`)
-  } finally {
-    loading.value = false
-    Message.clear()
-  }
 }
 
 const resetForm = () => {

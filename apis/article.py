@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from core.auth import get_current_user
 from core.db import DB
-
+from core.models.base import DATA_STATUS
 router = APIRouter(prefix=f"/articles", tags=["文章管理"])
-@router.api_route("", summary="获取文章列表",methods= ["GET", "POST"])
+@router.api_route("", summary="获取文章列表",methods= ["GET", "POST"], operation_id="get_articles_list")
 async def get_articles(
     offset: int = Query(0, ge=0),
     limit: int = Query(5, ge=1, le=100),
@@ -22,6 +22,8 @@ async def get_articles(
         
         if status:
             query = query.filter(Article.status == status)
+        else:
+            query = query.filter(Article.status != DATA_STATUS.DELETED)
         if mp_id:
             query = query.filter(Article.mp_id == mp_id)
         if search:
@@ -40,6 +42,8 @@ async def get_articles(
                        .offset(offset)\
                        .limit(limit)\
                        .all()
+        # 打印生成的 SQL 语句
+        print(query.statement.compile(compile_kwargs={"literal_binds": True}))
         
         # 查询公众号名称
         from core.models.feed import Feed
@@ -66,14 +70,14 @@ async def get_articles(
 
 @router.get("/{article_id}", summary="获取文章详情")
 async def get_article_detail(
-    article_id: int,
+    article_id: str,
     current_user: dict = Depends(get_current_user)
 ):
     session = DB.get_session()
     try:
         article = session.execute(
-            "SELECT * FROM articles WHERE id = :id",
-            {"id": article_id}
+            "SELECT * FROM articles WHERE id = :id AND status != :deleted",
+            {"id": article_id, "deleted": DATA_STATUS.DELETED}
         ).fetchone()
         if not article:
             from .base import error_response
@@ -109,13 +113,12 @@ async def delete_article(
                     message="文章不存在"
                 )
             )
-        
-        # 删除文章
-        session.delete(article)
+        # 逻辑删除文章（更新状态为deleted）
+        article.status = DATA_STATUS.DELETED
         session.commit()
         
         from .base import success_response
-        return success_response(None, message="文章删除成功")
+        return success_response(None, message="文章已标记为删除")
     except Exception as e:
         session.rollback()
         raise HTTPException(

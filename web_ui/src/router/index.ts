@@ -6,6 +6,10 @@ import ChangePassword from '../views/ChangePassword.vue'
 import EditUser from '../views/EditUser.vue'
 import AddSubscription from '../views/AddSubscription.vue'
 import WeChatMpManagement from '../views/WeChatMpManagement.vue'
+import MessageTaskList from '../views/MessageTaskList.vue'
+import MessageTaskDetail from '../views/MessageTaskDetail.vue'
+import ConfigList from '../views/ConfigList.vue'
+import ConfigDetail from '../views/ConfigDetail.vue'
 
 const routes = [
   {
@@ -43,6 +47,38 @@ const routes = [
         meta: { 
           requiresAuth: true,
           permissions: ['wechat:manage'] 
+        }
+      },
+      {
+        path: 'message-tasks',
+        name: 'MessageTaskList',
+        component: MessageTaskList,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'message-tasks/:id',
+        name: 'MessageTaskDetail',
+        component: MessageTaskDetail,
+        props: true,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'configs',
+        name: 'ConfigList',
+        component: ConfigList,
+        meta: { 
+          requiresAuth: true,
+          permissions: ['config:view'] 
+        }
+      },
+      {
+        path: 'configs/:key',
+        name: 'ConfigDetail',
+        component: ConfigDetail,
+        props: true,
+        meta: { 
+          requiresAuth: true,
+          permissions: ['config:view'] 
         }
       }
     ]

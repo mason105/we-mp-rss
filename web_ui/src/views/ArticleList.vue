@@ -3,7 +3,7 @@
   <a-layout class="article-list">
     <a-layout-sider :width=380
       :style="{ background: '#fff', padding: '0', borderRight: '1px solid #eee', display: 'flex', flexDirection: 'column' }">
-      <a-card :bordered="false" title="公众号列表"
+      <a-card :bordered="false" title="公众号"
         :headStyle="{ padding: '12px 16px', borderBottom: '1px solid #eee', position: 'fixed', top: 0, background: '#fff', zIndex: 1 }">
         <template #extra>
           <a-button type="primary" @click="showAddModal">
@@ -58,6 +58,10 @@
               <template #icon><IconWifi /></template>
               RSS订阅
             </a-button>
+            <a-button type="primary" status="danger" @click="handleBatchDelete" :disabled="!selectedRowKeys.length">
+              <template #icon><icon-delete /></template>
+              批量删除
+            </a-button>
           </a-space>
         </template>
       </a-page-header>
@@ -80,7 +84,14 @@
         </div>
 
         <a-table :columns="columns" :data="articles" :loading="loading" :pagination="pagination"
-          @page-change="handlePageChange" row-key="id">
+          @page-change="handlePageChange" row-key="id"
+          :row-selection="{
+            type: 'checkbox',
+            showCheckedAll: true,
+            width: 50,
+            fixed: true
+          }"
+          v-model:selectedKeys="selectedRowKeys">
           <template #status="{ record }">
             <a-tag :color="statusColorMap[record.status]">
               {{ statusTextMap[record.status] }}
@@ -121,6 +132,7 @@ const loading = ref(false)
 const mpList = ref([])
 const mpLoading = ref(false)
 const activeMpId = ref('')
+const selectedRowKeys = ref([])
 const mpPagination = ref({
   current: 1,
   pageSize: 10,
@@ -249,7 +261,7 @@ const fetchArticles = async () => {
     pagination.value.total = res.total || 0
   } catch (error) {
     console.error('获取文章列表错误:', error)
-    Message.error(error.message)
+    Message.error(error)
   } finally {
     loading.value = false
   }
@@ -343,6 +355,28 @@ const deleteArticle = (id: number) => {
     },
     onCancel: () => {
       Message.info('已取消删除操作');
+    }
+  });
+}
+
+const handleBatchDelete = () => {
+  Modal.confirm({
+    title: '确认批量删除',
+    content: `确定要删除选中的${selectedRowKeys.value.length}篇文章吗？删除后将无法恢复。`,
+    okText: '确认',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await Promise.all(selectedRowKeys.value.map(id => deleteArticleApi(id)));
+        Message.success(`成功删除${selectedRowKeys.value.length}篇文章`);
+        selectedRowKeys.value = [];
+        fetchArticles();
+      } catch (error) {
+        Message.error('删除部分文章失败');
+      }
+    },
+    onCancel: () => {
+      Message.info('已取消批量删除操作');
     }
   });
 }

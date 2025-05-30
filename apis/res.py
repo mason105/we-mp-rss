@@ -12,7 +12,7 @@ if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
 
 router = APIRouter(prefix="/res", tags=["资源反向代理"])
-@router.api_route("/logo/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+@router.api_route("/logo/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], operation_id="reverse_proxy_logo")
 async def reverse_proxy(request: Request, path: str):
     host="mmbiz.qpic.cn"
     domain=f"http://{host}"

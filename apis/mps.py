@@ -95,7 +95,7 @@ async def update_mps(
                 status_code=status.HTTP_200_OK,
                 detail=error_response(
                     code=40401,
-                    message="公众号不存在"
+                    message="请选择一个公众号"
                 )
             )
         from core.wx import get_list
@@ -165,6 +165,7 @@ async def get_mp(
         session.close()
 
 @router.post("", summary="添加公众号")
+
 async def add_mp(
     mp_name: str = Body(..., min_length=1, max_length=255),
     mp_cover: str = Body(None, max_length=255),

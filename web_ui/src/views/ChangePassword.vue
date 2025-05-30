@@ -88,10 +88,6 @@ const validatePassword = (value: string, callback: any) => {
     return
   }
   
-  if (!/[A-Z]/.test(value)) {
-    callback('必须包含至少一个大写字母')
-    return
-  }
   
   if (!/[a-z]/.test(value)) {
     callback('必须包含至少一个小写字母')
@@ -132,17 +128,14 @@ const handleSubmit = async () => {
     Message.error('新密码与确认密码不一致')
     return
   }
-
   loading.value = true
-  Message.loading('正在修改密码...')
-  
   try {
     const response = await changePassword({
       old_password: form.value.currentPassword,
       new_password: form.value.newPassword
     })
-    
-    if (response.data.code === 0) {
+    console.log(response)
+    if (response.code === 0) {
       Message.success('密码修改成功')
       // 清除token强制重新登录
       localStorage.removeItem('token')
@@ -150,21 +143,13 @@ const handleSubmit = async () => {
         router.push('/login')
       }, 1500)
     } else {
-      Message.error(`密码修改失败: ${response.data.message}`)
+      Message.warning(`密码修改失败: ${response.data.message}`)
     }
     
   } catch (error) {
-    console.error('密码修改错误:', error)
-    const errorMsg = error.response?.data?.detail || 
-                    error.response?.data?.message || 
-                    error.message || 
-                    '密码修改失败'
-    
-    Message.error(`密码修改失败: ${errorMsg}`)
     
   } finally {
     loading.value = false
-    Message.clear()
   }
 }
 
