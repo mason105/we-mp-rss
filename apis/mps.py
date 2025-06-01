@@ -113,7 +113,7 @@ async def update_mps(
             
 
         wx=WxGather()
-        if cfg.get("model","publish")=="web":
+        if cfg.get("model","web")=="web":
             wx=MpsWeb(wx)
         else:
             wx=MpsApi(wx)

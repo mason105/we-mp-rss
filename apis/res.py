@@ -14,10 +14,12 @@ if not os.path.exists(CACHE_DIR):
 router = APIRouter(prefix="/res", tags=["资源反向代理"])
 @router.api_route("/logo/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], operation_id="reverse_proxy_logo")
 async def reverse_proxy(request: Request, path: str):
-    host="mmbiz.qpic.cn"
-    domain=f"http://{host}"
+    hosts=["mmbiz.qpic.cn","mmbiz.qlogo.cn","mmecoa.qpic.cn"]
     path=path.replace("https://", "http://")
-    if not path.startswith(domain):
+    from urllib.parse import urlparse
+    parsed_url = urlparse(path)
+    host = parsed_url.netloc
+    if  host not  in hosts:
         return Response(
         content="只允许访问微信公众号图标，请使用正确的域名。",
         status_code=301,

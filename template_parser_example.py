@@ -28,6 +28,7 @@ feed_template = """订阅源信息:
 # 从数据库获取真实Feed和Article数据
 session = DB.get_session()
 try:
+    from datetime import datetime
     feed = session.query(Feed).first()
     articles = session.query(Article).order_by(Article.publish_time.desc()).limit(5).all()
     context4 = {
@@ -38,7 +39,7 @@ try:
         "articles": [
             {
                 "title": article.title,
-                "pub_date": article.publish_time
+                "pub_date": datetime.strftime(datetime.fromtimestamp(article.publish_time), "%Y/%m/%d %H:%M:%S")
             } for article in articles
         ]
     }
@@ -46,5 +47,5 @@ finally:
     session.close()
 
 parser4 = TemplateParser(feed_template)
-result4 = parser4.render(context4)
+result4 = parser4.render({})
 print("示例4结果:", result4)

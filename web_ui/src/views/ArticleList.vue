@@ -99,7 +99,7 @@
           </template>
           <template #actions="{ record }">
             <a-space>
-              <a-button type="text" @click="viewArticle(record.url)">
+              <a-button type="text" @click="viewArticle(record)">
                 <template #icon><icon-eye /></template>
               </a-button>
               <a-button type="text" status="danger" @click="deleteArticle(record.id)">
@@ -108,6 +108,20 @@
             </a-space>
           </template>
         </a-table>
+
+        <a-modal 
+          v-model:visible="articleModalVisible" 
+          :title="currentArticle.title"
+          width="800px"
+          :footer="false"
+        >
+          <div style="padding: 20px; max-height: 70vh; overflow-y: auto">
+            <div v-html="currentArticle.content"></div>
+            <div style="margin-top: 20px; color: var(--color-text-3); text-align: right">
+              {{ currentArticle.time }}
+            </div>
+          </div>
+        </a-modal>
       </a-card>
     </a-layout-content>
   </a-layout>
@@ -337,10 +351,30 @@ const handleAddSuccess = () => {
 }
 
 
-const viewArticle = (url: string) => {
-  window.open(`${url}`, '_blank')
-
+const viewArticle = (record: any) => {
+  if (record.content) {
+    // 处理图片链接，在所有图片链接前加上/static/res/logo/
+    const processedContent = record.content.replace(
+      /(<img[^>]*src=["'])(?!\/static\/res\/logo\/)([^"']*)/g,
+      '$1/static/res/logo/$2'
+    )
+    currentArticle.value = {
+      title: record.title,
+      content: processedContent,
+      time: formatDateTime(record.created_at)
+    }
+    articleModalVisible.value = true
+  } else {
+    window.open(record.url, '_blank')
+  }
 }
+
+const currentArticle = ref({
+  title: '',
+  content: '',
+  time: ''
+})
+const articleModalVisible = ref(false)
 
 const deleteArticle = (id: number) => {
   Modal.confirm({

@@ -7,13 +7,22 @@ db: ${DB:-sqlite:///db.db}
 #通知
 notice:
   dingding: "${DINGDING_WEBHOOK:-''}"
-
+  wechat: "${WECHAT_WEBHOOK:-''}"
+  feishu: "${FEISHU_WEBHOOK:-''}"
+  
 secret: ${SECRET_KEY:- 'we-mp-rss'}
 token: 
 user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.39...
 
 #定时任务执行间隔时间 单位秒 默认300s
 interval: ${INTERVAL:- 300}
+
+#采集方式：web 或 api  默认web
+
+model: ${MODEL:-web}
+
+#是否采集内容  默认True
+gather_content: ${GATHER_CONTENT:-True}
 
 #API服务端口
 port: ${PORT:-8001}

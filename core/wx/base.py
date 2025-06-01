@@ -9,6 +9,10 @@ from core.config import cfg
 # 定义基类
 class WxGather:
     articles=[]
+    def all_count(self):
+        if getattr(self, 'articles', None) is not None:
+            return len(self.articles)
+        return 0
     def __init__(self,is_add:bool=False):
          
         self.is_add=is_add
@@ -19,6 +23,7 @@ class WxGather:
         self.user_agent = cfg.get('user_agent', '')
         self.cookies = cfg.get('cookie', '')
         self.token=cfg.get('token','')
+        self.Gather_Content=cfg.get('gather_content',False)
         session=  requests.Session()
         timeout = (5, 10)
         session.timeout = timeout

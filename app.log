@@ -623,3 +623,5 @@
 2025-05-31 00:21:22 - core.log - INFO - 中国建设银行 更新结束,共更新0
 2025-05-31 00:21:23 - core.log - INFO - 扫描全能王 更新结束,共更新0
 2025-05-31 00:21:23 - core.log - INFO - 所有公众号更新完成,共更新0条数据
+2025-06-01 18:08:42 - core.log - INFO - 所有公众号更新完成,共更新<bound method WxGather.all_count of <core.wx.wx2.MpsWeb object at 0x000001998F232CF0>>条数据
+2025-06-01 18:09:34 - core.log - INFO - 所有公众号更新完成,共更新30条数据
