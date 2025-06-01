@@ -22,9 +22,11 @@ def delete_article(id:str):
     except Exception as e:
         print(e)
         pass
+
+
 # 获取公众号列表
 mps=wx_db.get_all_mps()
-def do_job():
+def do_job1():
     print("开始更新")
     all_count=0
     text=f" **时间**：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n"
@@ -58,6 +60,33 @@ def do_job():
         send_notice(text,cfg.get('app_name',default='we-mp-rss'))
     else:
         print(text)    
+
+def UpdateArticle(art:dict):
+    mps_count=0
+    if DEBUG:
+        delete_article(art['id'])
+    if  wx_db.add_article(art):
+        mps_count=mps_count+1
+        return True
+    return False
+
+def do_job():
+    from core.wx import MpsApi,MpsWeb,WxGather
+    print("开始更新")
+    wx=WxGather()
+    if cfg.get("model","publish")=="web":
+        wx=MpsWeb(wx)
+    else:
+        wx=MpsApi(wx)
+    for item in mps:
+        # try:
+            wx.get_Articles(item.faker_id,CallBack=UpdateArticle,Mps_id=item.id,Mps_title=item.mp_name, MaxPage=2)
+        # except Exception as e:s
+        #     print(e)
+        #     break
+    print(wx.articles)          
+
+
 def start():
     schedule.every(int(cfg.get("interval",5*60))).seconds.do(do_job)  # 默认5分钟执行一次
     # schedule.every.day.at("08:00").do(job)  # 每天8点执行

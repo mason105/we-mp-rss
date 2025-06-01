@@ -70,7 +70,7 @@ class Wx:
         return {
             "code":self.wx_login_url
         }
-    def wxLogin(self,Callback=None):
+    def wxLogin(self,Callback=None,NeedExit=True):
         """
         微信公众平台登录流程：
         1. 检查依赖和环境
@@ -167,7 +167,7 @@ class Wx:
         finally:
             self.clean()
             self.isLOCK=False
-            if 'controller' in locals():
+            if 'controller' in locals() and NeedExit:
                 controller.close()
         return self.SESSION
     def Close(self):

@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from core.auth import get_current_user
 from core.db import DB
 from core.models.base import DATA_STATUS
+from core.models.article import Article
+from sqlalchemy import and_, or_
 router = APIRouter(prefix=f"/articles", tags=["文章管理"])
 @router.api_route("", summary="获取文章列表",methods= ["GET", "POST"], operation_id="get_articles_list")
 async def get_articles(
@@ -14,8 +16,7 @@ async def get_articles(
 ):
     session = DB.get_session()
     try:
-        from core.models.article import Article
-        from sqlalchemy import and_, or_
+      
         
         # 构建查询条件
         query = session.query(Article)
@@ -71,14 +72,12 @@ async def get_articles(
 @router.get("/{article_id}", summary="获取文章详情")
 async def get_article_detail(
     article_id: str,
-    current_user: dict = Depends(get_current_user)
+    content: bool = False,
+    # current_user: dict = Depends(get_current_user)
 ):
     session = DB.get_session()
     try:
-        article = session.execute(
-            "SELECT * FROM articles WHERE id = :id AND status != :deleted",
-            {"id": article_id, "deleted": DATA_STATUS.DELETED}
-        ).fetchone()
+        article = session.query(Article).filter(Article.id==article_id).filter(Article.status != DATA_STATUS.DELETED).first()
         if not article:
             from .base import error_response
             raise HTTPException(

@@ -43,8 +43,14 @@ class Db:
         try:
             from datetime import datetime
             art = Article(**article_data)
-            art.created_at=datetime.strptime(art.created_at,'%Y-%m-%d %H:%M:%S')
+            if art.created_at is None:
+                art.created_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            if art.updated_at is None:
+                art.updated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            art.created_at=datetime.strptime(art.created_at ,'%Y-%m-%d %H:%M:%S')
             art.updated_at=datetime.strptime(art.updated_at,'%Y-%m-%d %H:%M:%S')
+            from core.models.base import DATA_STATUS
+            art.status=DATA_STATUS.ACTIVE
             self.session.add(art) 
             self.session.commit()
         except Exception as e:

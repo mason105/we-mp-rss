@@ -98,7 +98,7 @@ async def update_mps(
                     message="请选择一个公众号"
                 )
             )
-        from core.wx import get_list
+        from core.wx import WxGather,MpsApi,MpsWeb
         import time
         time_span=int(time.time())-mp.update_time
         if time_span<cfg.get("sync_interval",60):
@@ -112,8 +112,16 @@ async def update_mps(
             )
             
 
+        wx=WxGather()
+        if cfg.get("model","publish")=="web":
+            wx=MpsWeb(wx)
+        else:
+            wx=MpsApi(wx)
+            
+        def UpdateArticle(art:dict):
+            return DB.add_article(art)
+        result= wx.get_Articles(mp.faker_id,Mps_id=mp.id,CallBack=UpdateArticle)
 
-        result=get_list(faker_id= mp.faker_id, mp_id=mp.id ,is_add=True)
         return success_response({
             "time_span":time_span,
             "list":result,
@@ -122,13 +130,13 @@ async def update_mps(
         })
     except Exception as e:
         print(f"获取公众号详情错误: {str(e)}",e)
-        # raise HTTPException(
-        #     status_code=status.HTTP_406_NOT_ACCEPTABLE,
-        #     detail=error_response(
-        #         code=50001,
-        #         message=f"获取公众号详情失败{str(e)}"
-        #     )
-        # )
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail=error_response(
+                code=50001,
+                message=f"获取公众号详情失败{str(e)}"
+            )
+        )
         raise e
     finally:
         session.close()

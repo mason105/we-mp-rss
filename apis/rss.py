@@ -13,7 +13,7 @@ async def update_rss_feeds(
     request: Request,
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: dict = Depends(get_current_user)
+    # current_user: dict = Depends(get_current_user)
 ):
     return await get_rss_feeds(request=request, limit=limit,offset=offset, is_update=True)
 
@@ -36,12 +36,11 @@ async def get_rss_feeds(
     try:
         total = session.query(Feed).count()
         feeds = session.query(Feed).order_by(Feed.created_at.desc()).limit(limit).offset(offset).all()
-        
         # 转换为RSS格式数据
         rss_list = [{
             "id": str(feed.id),
             "title": feed.mp_name,
-            "link": f"{request.base_url}rss/{feed.id}",
+            "link":  f"{request.base_url}rss/{feed.id}",
             "updated": feed.created_at.isoformat()
         } for feed in feeds]
         
@@ -114,7 +113,7 @@ async def get_mp_articles_rss(
         rss_list = [{
             "id": str(article.id),
             "title": article.title,
-            "link": f"https://mp.weixin.qq.com/s/{article.id}",
+            "link": article.url if article.url else f"https://mp.weixin.qq.com/s/{article.id}",
             "description": article.title,
             "updated": article.updated_at.isoformat()
         } for article in articles]

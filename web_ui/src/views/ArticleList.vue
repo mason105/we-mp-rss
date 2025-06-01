@@ -256,7 +256,7 @@ const fetchArticles = async () => {
       ...item,
       mp_name: item.mp_name || item.account_name || '未知公众号',
       publish_time: item.publish_time || item.create_time || '-',
-      url: "https://mp.weixin.qq.com/s/" + item.id
+      url: item.url||"https://mp.weixin.qq.com/s/" + item.id
     }))
     pagination.value.total = res.total || 0
   } catch (error) {

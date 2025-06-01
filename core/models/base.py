@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 
 class DataStatus():
-    DELETED:int = -1
+    DELETED:int = 1000
     ACTIVE:int = 1
     INACTIVE:int = 2
     PENDING:int = 3

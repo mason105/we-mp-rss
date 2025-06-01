@@ -52,7 +52,7 @@ export const checkQRCodeStatus = () => {
   return new Promise((resolve, reject) => {
     const intervalId = setInterval(() => {
         http.get("wx/auth/qr/status").then(response => {
-          if(response){
+          if(response?.login_status){
             clearInterval(intervalId)
             resolve(response)
           }

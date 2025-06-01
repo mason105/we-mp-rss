@@ -10,7 +10,7 @@ from core.auth import (
 from .ver import API_VERSION
 from .base import success_response, error_response
 from driver.wx import WX_API
-from core.wx import set_config
+from core.config import set_config
 router = APIRouter(prefix=f"/auth", tags=["认证"])
 
 
@@ -33,7 +33,9 @@ async def qr_image(current_user=Depends(get_current_user)):
 
 @router.get("/qr/status",summary="获取扫描状态")
 async def qr_status(current_user=Depends(get_current_user)):
-     return success_response(WX_API.HasLogin)    
+     return success_response({
+          "login_status":WX_API.HasLogin,
+     })    
 @router.get("/qr/over",summary="扫码完成")
 async def qr_success(current_user=Depends(get_current_user)):
      return success_response(WX_API.Close())    

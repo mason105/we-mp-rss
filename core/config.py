@@ -3,7 +3,6 @@ import sys
 import os
 import argparse
 from string import Template
-config = {}
 class Config: 
     config_path=None
     def __init__(self,config_path=None):
@@ -62,7 +61,12 @@ class Config:
             if default is not None:
                 return default
         return None
+
 cfg=Config()
+def set_config(key:str,value:str):
+    cfg.set(key,value)
+def save_config():
+    cfg.save_config()
 config = cfg.get_config()
 DEBUG=cfg.get("debug",False)
 APP_NAME=cfg.get("app_name","we-mp-rss")
