@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM docker.1ms.run/ubuntu:20.04
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV DEBIAN_FRONTEND=noninteractive
