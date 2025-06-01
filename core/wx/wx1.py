@@ -59,18 +59,6 @@ class MpsApi(WxGather):
             "f": "json",
             "ajax": "1"
         }
-        # if Gather_Content==False:
-        #     params = {
-        #     "sub": "list",
-        #     "sub_action": "list_ex",
-        #     "begin": 0,
-        #     "count": count,
-        #     "fakeid": faker_id,
-        #     "token": self.token,
-        #     "lang": "zh_CN",
-        #     "f": "json",
-        #     "ajax": 1
-        #     }
 
         # 连接超时
         session=self.session

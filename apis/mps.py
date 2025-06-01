@@ -33,7 +33,7 @@ async def search_mp(
     except Exception as e:
         print(f"搜索公众号错误: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            status_code=status.HTTP_201_CREATED,
             detail=error_response(
                 code=50001,
                 message="搜索公众号失败"
@@ -72,7 +72,7 @@ async def get_mps(
     except Exception as e:
         print(f"获取公众号列表错误: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            status_code=status.HTTP_201_CREATED,
             detail=error_response(
                 code=50001,
                 message="获取公众号列表失败"
@@ -91,25 +91,19 @@ async def update_mps(
         from core.models.feed import Feed
         mp = session.query(Feed).filter(Feed.id == mp_id).first()
         if not mp:
-            raise HTTPException(
-                status_code=status.HTTP_200_OK,
-                detail=error_response(
+           return error_response(
                     code=40401,
                     message="请选择一个公众号"
                 )
-            )
         from core.wx import WxGather,MpsApi,MpsWeb
         import time
         time_span=int(time.time())-mp.update_time
         if time_span<cfg.get("sync_interval",60):
-           raise HTTPException(
-                status_code=status.HTTP_200_OK,
-                detail=error_response(
+           return error_response(
                     code=40402,
                     message="请不要频繁更新操作",
                     data={"time_span":time_span}
                 )
-            )
             
 
         wx=WxGather()
@@ -120,8 +114,8 @@ async def update_mps(
             
         def UpdateArticle(art:dict):
             return DB.add_article(art)
-        result= wx.get_Articles(mp.faker_id,Mps_id=mp.id,CallBack=UpdateArticle)
-
+        wx.get_Articles(mp.faker_id,Mps_id=mp.id,CallBack=UpdateArticle)
+        result=wx.articles
         return success_response({
             "time_span":time_span,
             "list":result,
@@ -129,12 +123,12 @@ async def update_mps(
             "mps":mp
         })
     except Exception as e:
-        print(f"获取公众号详情错误: {str(e)}",e)
+        print(f"更新公众号文章: {str(e)}",e)
         raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            status_code=status.HTTP_201_CREATED,
             detail=error_response(
                 code=50001,
-                message=f"获取公众号详情失败{str(e)}"
+                message=f"更新公众号文章{str(e)}"
             )
         )
         raise e
@@ -153,7 +147,7 @@ async def get_mp(
         mp = session.query(Feed).filter(Feed.id == mp_id).first()
         if not mp:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=status.HTTP_201_CREATED,
                 detail=error_response(
                     code=40401,
                     message="公众号不存在"
@@ -163,7 +157,7 @@ async def get_mp(
     except Exception as e:
         print(f"获取公众号详情错误: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            status_code=status.HTTP_201_CREATED,
             detail=error_response(
                 code=50001,
                 message="获取公众号详情失败"
@@ -234,7 +228,7 @@ async def add_mp(
         session.rollback()
         print(f"添加公众号错误: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            status_code=status.HTTP_201_CREATED,
             detail=error_response(
                 code=50001,
                 message="添加公众号失败"
@@ -282,7 +276,7 @@ async def delete_mp(
         mp = session.query(Feed).filter(Feed.id == mp_id).first()
         if not mp:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=status.HTTP_201_CREATED,
                 detail=error_response(
                     code=40401,
                     message="订阅号不存在"
@@ -299,7 +293,7 @@ async def delete_mp(
         session.rollback()
         print(f"删除订阅号错误: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            status_code=status.HTTP_201_CREATED,
             detail=error_response(
                 code=50001,
                 message="删除订阅号失败"

@@ -26,6 +26,61 @@ def delete_article(id:str):
 
 # 获取公众号列表
 mps=wx_db.get_all_mps()
+
+def UpdateArticle(art:dict):
+    mps_count=0
+    if DEBUG:
+        delete_article(art['id'])
+        pass
+    if  wx_db.add_article(art):
+        mps_count=mps_count+1
+        return True
+    return False
+
+def do_job():
+    from core.wx import MpsApi,MpsWeb,WxGather
+    print("开始更新")
+    wx=WxGather()
+    try:
+        if cfg.get("model","web")=="web":
+            wx=MpsWeb(wx)
+        else:
+            wx=MpsApi(wx)
+        for item in mps:
+            try:
+                wx.get_Articles(item.faker_id,CallBack=UpdateArticle,Mps_id=item.id,Mps_title=item.mp_name, MaxPage=1)
+            except Exception as e:
+                print(e)
+        print(wx.articles) 
+    except Exception as e:
+        print(e)         
+    finally:
+        logger.info(f"所有公众号更新完成,共更新{wx.all_count()}条数据")
+
+
+def start():
+    from core.task import TaskScheduler
+    with TaskScheduler() as scheduler:
+        # 添加每分钟执行一次的任务
+        job_id = scheduler.add_cron_job(do_job, "*/5 * * * *")
+        print(f"已添加任务: {job_id}")
+        input("按Enter键退出...\n")
+
+def sys_notice(text:str="",title:str=""):
+    from core.notice import notice
+    markdown_text = f"### {title} 通知\n{text}"
+    webhook = cfg.get('notice')['dingding']
+    if len(webhook)>0:
+        notice(webhook, title, markdown_text)
+    feishu_webhook = cfg.get('notice')['feishu']
+    if len(feishu_webhook)>0:
+        notice(feishu_webhook, title, markdown_text)
+    wechat_webhook = cfg.get('notice')['wechat']
+    if len(wechat_webhook)>0:
+        notice(wechat_webhook, title, markdown_text)
+
+
+
 def do_job1():
     print("开始更新")
     all_count=0
@@ -60,57 +115,6 @@ def do_job1():
         sys_notice(text,cfg.get('app_name',default='we-mp-rss'))
     else:
         print(text)    
-
-def UpdateArticle(art:dict):
-    mps_count=0
-    if DEBUG:
-        delete_article(art['id'])
-        pass
-    if  wx_db.add_article(art):
-        mps_count=mps_count+1
-        return True
-    return False
-
-def do_job():
-    from core.wx import MpsApi,MpsWeb,WxGather
-    print("开始更新")
-    wx=WxGather()
-    try:
-        if cfg.get("model","web")=="web":
-            wx=MpsWeb(wx)
-        else:
-            wx=MpsApi(wx)
-        for item in mps:
-            try:
-                wx.get_Articles(item.faker_id,CallBack=UpdateArticle,Mps_id=item.id,Mps_title=item.mp_name, MaxPage=1)
-            except Exception as e:
-                print(e)
-        print(wx.articles) 
-    except Exception as e:
-        print(e)         
-    finally:
-        logger.info(f"所有公众号更新完成,共更新{wx.all_count()}条数据")
-
-
-def start():
-    schedule.every(int(cfg.get("interval",5*60))).seconds.do(do_job)  # 默认5分钟执行一次
-    # schedule.every.day.at("08:00").do(job)  # 每天8点执行
-    while True:
-        schedule.run_pending()
-        time.sleep(10)
-
-def sys_notice(text:str="",title:str=""):
-    from core.notice import notice
-    markdown_text = f"### {title} 通知\n{text}"
-    webhook = cfg.get('notice')['dingding']
-    if len(webhook)>0:
-        notice(webhook, title, markdown_text)
-    feishu_webhook = cfg.get('notice')['feishu']
-    if len(feishu_webhook)>0:
-        notice(feishu_webhook, title, markdown_text)
-    wechat_webhook = cfg.get('notice')['wechat']
-    if len(wechat_webhook)>0:
-        notice(wechat_webhook, title, markdown_text)
 
 if __name__ == '__main__':
     do_job()
