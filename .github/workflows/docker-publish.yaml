@@ -5,7 +5,7 @@ on:
       - main
     paths:  # 仅在指定文件变化时触发（可选）
       # - 'ReadMe.md'
-      - '.github\workflows\docker-publish.yaml'
+      - '.github/workflows/docker-publish.yaml'
 #   release:
 #     types: [published]
 jobs:
