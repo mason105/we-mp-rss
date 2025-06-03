@@ -1,9 +1,11 @@
 
-FROM  ghcr.io/rachelos/py38:latest
+FROM  ghcr.io/rachelos/py3.13.1:latest
 # 安装系统依赖
 WORKDIR /app
 
-RUN export PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+# ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+ENV PIP_INDEX_URL=https://mirrors.huaweicloud.com/repository/pypi/simple
+
 # 复制Python依赖文件
 # 复制后端代码
 COPY . .
@@ -11,7 +13,6 @@ COPY . .
 # RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 RUN rm -rf ./web_ui
-RUN rm -rf ./venv
 
 COPY ./config.example.yaml  ./config.yaml
 RUN chmod +x ./start.sh
