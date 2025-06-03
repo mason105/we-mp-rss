@@ -1,25 +1,20 @@
-name: Create Release
+name: Release Zip
 on:
   push:
-    branches:
-      - main
-    # paths:  # 仅在指定文件变化时触发（可选）
-    #   - 'core/ver.py'
     tags:
-      - 'v*'
+      - "v*"
+
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN:  ${{secrets.TOKEN}}
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Zip
+        # 添加构建项目的步骤
+      - name: Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name:  ${{github.ref}}
-          release_name: Release  ${{github.ref}}
-          draft: false
-          prerelease: false
-          files: |
-            build/*.zip  # 指定上传的文件路径
+          token:  $ {{ secrets.TOKEN }}
+          # 其他可选配置，如发布说明文件、附加文件等
