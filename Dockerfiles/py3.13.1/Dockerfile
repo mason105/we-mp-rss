@@ -1,4 +1,4 @@
-FROM ghcr.io/rachelos/rachel_base_os:latest
+FROM ghcr.io/rachelos/base:latest
 
 ENV PIP_INDEX_URL=https://mirrors.huaweicloud.com/repository/pypi/simple
 WORKDIR /app
