@@ -44,7 +44,7 @@ class MpsApi(WxGather):
         super().Start(mp_id=Mps_id)
         if self.Gather_Content:
              Gather_Content=True
-        print(f"API获取模式,是否采集内容：{Gather_Content}\n")
+        print(f"API获取模式,是否采集[{Mps_title}]内容：{Gather_Content}\n")
         # 请求参数
         url = "https://mp.weixin.qq.com/cgi-bin/appmsg"
         count=5

@@ -40,11 +40,11 @@ class MpsWeb(WxGather):
             return  js_content_div.prettify()
         return None
     # 重写 get_Articles 方法
-    def get_Articles(self, faker_id:str=None,Mps_id:str=None,Mps_title="",CallBack=None,begin=0,MaxPage:int=1,interval=1,Gather_Content=False):
+    def get_Articles(self, faker_id:str=None,Mps_id:str=None,Mps_title="",CallBack=None,begin:int=0,MaxPage:int=1,interval=1,Gather_Content=False):
         super().Start(mp_id=Mps_id)
         if self.Gather_Content:
             Gather_Content=True
-        print(f"Web浏览器模式,是否采集内容：{Gather_Content}\n")
+        print(f"Web浏览器模式,是否采集[{Mps_title}]内容：{Gather_Content}\n")
         # 请求参数
         url = "https://mp.weixin.qq.com/cgi-bin/appmsgpublish"
         count=5

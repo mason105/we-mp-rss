@@ -97,7 +97,6 @@ async def update_mps(
                     code=40401,
                     message="请选择一个公众号"
                 )
-        from core.wx import WxGather,MpsApi,MpsWeb
         import time
         time_span=int(time.time())-mp.update_time
         if time_span<cfg.get("sync_interval",60):
@@ -108,15 +107,11 @@ async def update_mps(
                 )
             
 
-        wx=WxGather()
-        if cfg.get("model","web")=="web":
-            wx=MpsWeb(wx)
-        else:
-            wx=MpsApi(wx)
-            
-       
+        from core.wx import WxGather
+        wx=WxGather().Model()
         wx.get_Articles(mp.faker_id,Mps_id=mp.id,CallBack=UpdateArticle)
         result=wx.articles
+
         return success_response({
             "time_span":time_span,
             "list":result,
@@ -217,9 +212,10 @@ async def add_mp(
         feed = existing_feed if existing_feed else new_feed
          #在这里实现第一次添加获取公众号文章
         if not existing_feed:
-            from core.wx import Task
+            from core.queue import TaskQueue
             from core.wx import WxGather
-            Task.add_task( WxGather().Model().get_Articles,faker_id=feed.faker_id,Mps_id=feed.id,CallBack=UpdateArticle)
+            Max_page=int(cfg.get("max_page","2"))
+            TaskQueue.add_task( WxGather().Model().get_Articles,faker_id=feed.faker_id,Mps_id=feed.id,CallBack=UpdateArticle,MaxPage=Max_page,Mps_title=mp_name)
             
         return success_response({
             "id": feed.id,

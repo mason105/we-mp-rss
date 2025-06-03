@@ -38,7 +38,7 @@ def UpdateArticle(art:dict):
     return False
 
 def do_job():
-    from core.wx import MpsApi,MpsWeb,WxGather
+    from core.wx import  WxGather
     print("开始更新")
     wx=WxGather().Model()
     try:
