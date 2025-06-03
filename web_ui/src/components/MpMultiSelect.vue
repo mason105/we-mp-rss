@@ -2,6 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { searchMps } from '@/api/subscription'
 
+const formatCoverUrl = (url: string) => {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return '/static/res/logo/' + url
+  }
+  return url
+}
+
 interface MpItem {
   id: string
   mp_name: string
@@ -75,14 +83,13 @@ const emitSelectedIds = () => {
   // emit('update:modelValue', selectedMps.value.map(mp => mp.id).join(','))
   emit('update:modelValue', selectedMps.value)
 }
-
 const parseSelected = (data:MpItem[]) => {
   selectedMps.value = data.map(item => {
     const found = mpList.value.find(mp => mp.id === item.id)
     return found || {
       id: item.id,
       mp_name: item.mp_name,
-      mp_cover: item.mp_cover||''
+      mp_cover: (item.mp_cover||'')
     }
   })
 }
@@ -125,8 +132,8 @@ onMounted(() => {
               closable
               @close="removeSelected(mp)"
             >
-              <a-avatar :size="20" :image-url="mp.mp_cover">
-                <img v-if="mp.avatar" :src="mp.mp_cover" :alt="mp.mp_name" />
+              <a-avatar :size="20" :image-url="formatCoverUrl(mp.mp_cover)">
+                <img v-if="mp.mp_cover" :src="formatCoverUrl(mp.mp_cover)" :alt="mp.mp_name" />
               </a-avatar>
               {{ mp.mp_name }}
             </a-tag>
@@ -144,8 +151,8 @@ onMounted(() => {
             @click="toggleSelect(mp)"
           >
             <a-space>
-              <a-avatar :image-url="mp.mp_cover">
-                <img v-if="mp.mp_cover" :src="mp.mp_cover" :alt="mp.mp_name" />
+              <a-avatar :image-url="formatCoverUrl(mp.mp_cover)">
+                <img v-if="mp.mp_cover" :src="formatCoverUrl(mp.mp_cover)" :alt="mp.mp_name" />
               </a-avatar>
               <span>{{ mp.mp_name }}</span>
             </a-space>

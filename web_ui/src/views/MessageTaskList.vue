@@ -129,9 +129,9 @@ onMounted(() => {
       >
         <template #columns>
           <a-table-column title="ID" data-index="id" :width="80" />
-          <a-table-column title="名称" data-index="name" ellipsis />
-          <a-table-column title="类型" data-index="message_type" ellipsis />
-          <a-table-column title="cron表达式" :width="120">
+          <a-table-column title="名称" data-index="name" ellipsis :width="200"/>
+          <!-- <a-table-column title="类型" data-index="message_type" ellipsis /> -->
+          <a-table-column title="cron表达式">
             <template #cell="{ record }">
               {{ parseCronExpression(record.cron_exp) }}
             </template>

@@ -22,7 +22,8 @@
             "program": "main.py",
             // "program": "job.py",
             // "program":"${file}",
-            "args": ["-init", "True","-job","True"]
+            "args": ["-init", "True","-job","False"]
+            // "args": ["-init", "True","-job","True"]
         }
     ]
 }

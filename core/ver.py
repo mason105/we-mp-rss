@@ -1,7 +1,4 @@
 import requests
-
-VERSION = '1.3.7'
-
 try:
     response = requests.get('https://api.github.com/repos/rachelos/we-mp-rss/releases/latest')
     response.raise_for_status()  # 检查请求是否成功
@@ -14,4 +11,13 @@ except ValueError as e:
     print(f"Failed to parse JSON response: {e}")
     LATEST_VERSION = ''
 
+#API接口前缀
 API_BASE = "/api/v1/wx"
+#当前程序版本
+VERSION = '1.3.7'
+
+#工作目录
+WORK_DIR="./work"
+
+#静态文件目录
+STATIC_DIR="./static"

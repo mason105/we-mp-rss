@@ -1,15 +1,15 @@
 import uvicorn
 from core.config import cfg
+import threading
 import os
 if __name__ == '__main__':
     if cfg.args.init=="True":
         import init_sys as init
         #如果没有用户，就创建一个
-        init.init()
-        print('初始化完成')
+        threading.Thread(target=init.init,daemon=True).start()
     if  cfg.args.job =="True":
         from jobs import start_job
-        import threading
+     
         threading.Thread(target=start_job,daemon=True).start()
         # start_job()
     print("启动服务器")

@@ -1,10 +1,11 @@
 from typing import Dict, List, Optional
 from datetime import datetime
 import logging
+from sqlalchemy import inspect
 from core.db import Db
 from core.models.base import Base
-
-logger = logging.getLogger(__name__)
+from core.print import print_info, print_error
+from core.log import logger
 
 class DataSync:
     def __init__(self, source_db: Db, target_db: Db):
@@ -15,14 +16,14 @@ class DataSync:
         """将模型类同步到数据库表结构"""
         try:
             # 检查表是否已存在
-            if not self.target_db.engine.dialect.has_table(self.target_db.engine, model_class.__tablename__):
+            if not inspect(self.target_db.engine).has_table(model_class.__tablename__):
                 # 表不存在则创建
                 model_class.__table__.create(self.target_db.engine)
                 logger.info(f"Created table {model_class.__tablename__}")
                 return True
             
             # 表已存在则比较差异
-            temp_table = type(f"Temp{table.__name__}", (Base,), {
+            temp_table = type(f"Temp{model_class.__name__}", (Base,), {
                 '__tablename__': f"temp_{model_class.__tablename__}",
                 '__table_args__': {'extend_existing': True}
             })
@@ -42,6 +43,7 @@ class DataSync:
             
         except Exception as e:
             logger.error(f"Failed to sync model {model_class.__name__} to table: {e}")
+            # raise e
             return False
         
     def compare_schemas(self, source_table, target_table):

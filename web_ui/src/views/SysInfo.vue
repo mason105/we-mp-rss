@@ -48,13 +48,14 @@
           </template>
           {{ sysInfo.core_version }}
         </a-descriptions-item>
-        <a-descriptions-item label="最新版本" v-if="sysInfo.need_update">
+        <a-descriptions-item label="最新版本">
           <template #label>
             <cloud-download-outlined /> 最新版本
           </template>
            {{ sysInfo.latest_version }}
           <!-- 添加点击事件 -->
           <a-button 
+          v-if="sysInfo.need_update"
             type="text" 
             size="small" 
             style="margin-left: 8px"

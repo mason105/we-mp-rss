@@ -102,6 +102,7 @@ onMounted(() => {
         
         <a-form-item label="任务类型" field="message_type" required>
           <a-input
+            type="hidden"
             v-model="formData.message_type"
             placeholder="请输入任务类型"
           />
