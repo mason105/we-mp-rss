@@ -9,10 +9,11 @@
     
     <a-card>
       <a-form
+        ref="formRef"
         :model="form"
         :rules="rules"
-        @submit="handleSubmit"
         layout="vertical"
+        @submit="handleSubmit"
       >
         <a-form-item label="公众号名称" field="name">
           <a-space>
@@ -39,13 +40,13 @@
         </a-form-item>
         <a-form-item label="公众号ID" field="accountId">
           <a-input
+            readonly='readonly'
             v-model="form.wx_id"
             placeholder="请输入公众号ID"
           >
             <template #prefix><icon-idcard /></template>
           </a-input>
         </a-form-item>
-        
         
         <a-form-item label="描述" field="description">
           <a-textarea
@@ -79,6 +80,7 @@ const router = useRouter()
 const loading = ref(false)
 const searchResults = ref([])
 const avatar_url = ref('/static/default-avatar.png')
+const formRef = ref(null)
 const form = ref({
   name: '',
   wx_id: '',
@@ -94,13 +96,27 @@ watch(() => form.value.avatar, (newValue, oldValue) => {
 }, { deep: true });
 
 const rules = {
-  name: [{ required: true, message: '请输入公众号名称' }],
-  accountId: [{ required: true, message: '请输入公众号ID' }],
-  rssUrl: [
-    { required: true, message: '请输入RSS链接' },
-    { type: 'url', message: '请输入有效的URL' }
+  name: [
+    { required: true, message: '请输入公众号名称' },
+    { min: 2, max: 30, message: '公众号名称长度应在2-30个字符之间' }
   ],
-  category: [{ required: true, message: '请选择分类' }]
+  wx_id: [
+    { required: true, message: '请输入公众号ID' },
+    { pattern: /^[a-zA-Z0-9_-]+$/, message: '公众号ID只能包含字母、数字、下划线和横线' }
+  ],
+  avatar: [
+    { 
+      required: true, 
+      message: '请选择公众号头像',
+      validator: (value: string) => {
+        return value && value.startsWith('http')
+      },
+      message: '请选择有效的头像URL'
+    }
+  ],
+  description: [
+    { max: 200, message: '描述不能超过200个字符' }
+  ]
 }
 
 const handleSearch = async (value: string) => {
@@ -130,20 +146,32 @@ const handleSelect = (item: any) => {
 }
 
 const handleSubmit = async () => {
+  
   loading.value = true
+  
+  // 表单验证
   try {
-    await addSubscription(
-      {
+    await formRef.value.validate()
+  } catch (error) {
+    Message.error(error?.errors?.join('\n') || '表单验证失败，请检查输入内容')
+    loading.value = false
+    return
+  }
+
+  // 表单提交
+  try {
+    await addSubscription({
       mp_name: form.value.name,
       mp_id: form.value.wx_id,
       avatar: form.value.avatar,
       mp_intro: form.value.description,
-      }
-    )
+    })
+    
     Message.success('订阅添加成功')
     router.push('/')
   } catch (error) {
-    Message.error('订阅添加失败')
+    console.error('订阅添加失败:', error)
+    Message.error(error.message || '订阅添加失败，请稍后重试')
   } finally {
     loading.value = false
   }

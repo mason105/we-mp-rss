@@ -28,3 +28,6 @@ gather_content: ${GATHER_CONTENT:-True}
 port: ${PORT:-8001}
 #调试模式
 debug: ${DEBUG:-False}
+
+#最大页数 第一次添加 采集的页数默认5页
+max_page: ${MAX_PAGE:-5}

@@ -144,20 +144,21 @@ onMounted(() => {
           <h4>可选公众号</h4>
           <a-button size="mini" type="text" @click="selectAll">全选</a-button>
         </a-space>
-        <a-list :bordered="false">
-          <a-list-item
+        <div class="mp-list">
+          <div
             v-for="mp in filteredMps"
             :key="mp.id"
+            class="mp-item"
             @click="toggleSelect(mp)"
           >
             <a-space>
-              <a-avatar :image-url="formatCoverUrl(mp.mp_cover)">
+              <a-avatar :size="24" :image-url="formatCoverUrl(mp.mp_cover)">
                 <img v-if="mp.mp_cover" :src="formatCoverUrl(mp.mp_cover)" :alt="mp.mp_name" />
               </a-avatar>
               <span>{{ mp.mp_name }}</span>
             </a-space>
-          </a-list-item>
-        </a-list>
+          </div>
+        </div>
       </a-spin>
     </a-space>
   </a-card>
@@ -180,6 +181,23 @@ h4 {
 }
 
 :deep(.arco-list-item:hover) {
+  background-color: var(--color-fill-2);
+}
+
+.mp-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mp-item {
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: var(--color-fill-1);
+}
+
+.mp-item:hover {
   background-color: var(--color-fill-2);
 }
 </style>
