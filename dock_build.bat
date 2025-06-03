@@ -1,6 +1,9 @@
 echo off
 chcp 65001
-set name=we-mp-rss:latest
+for /f "tokens=1 delims==" %%v in ('python -c "from core.ver import VERSION; print(VERSION)"') do set VERSION=%%v
+set tag="v%VERSION%"
+echo 当前版本: %VERSION% TAG: %tag%
+set name=we-mp-rss:%VERSION%
 docker build -t %name% .
 REM 获取所有运行中容器的ID并逐个停止
 FOR /f "tokens=*" %%i IN ('docker ps -q') DO docker stop %%i
@@ -13,3 +16,4 @@ docker image tag %name% ghcr.io/rachelos/%name%
 docker image ls
 docker push ghcr.io/rachelos/%name%
 )
+docker stop we-mp-rss

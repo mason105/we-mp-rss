@@ -92,9 +92,6 @@ async def serve_vue_app(request: Request, path: str):
     return {"error": "Not Found"}, 404
 
 @app.get("/",tags=['默认'],include_in_schema=False)
-async def serve_root():
+async def serve_root(request: Request):
     """处理根路由"""
-    index_path = os.path.join("static", "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"error": "index.html not found"}, 404
+    return await serve_vue_app(request, "")
