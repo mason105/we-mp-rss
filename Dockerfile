@@ -13,7 +13,7 @@ COPY . .
 # RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 RUN rm -rf ./web_ui
-
+RUN db.db
 COPY ./config.example.yaml  ./config.yaml
 RUN chmod +x ./start.sh
 # 暴露端口
