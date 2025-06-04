@@ -24,20 +24,22 @@ class WxGather:
             wx=MpsApi()
         return wx
     def __init__(self,is_add:bool=False):
-         
         self.is_add=is_add
-        self.headers = {
-            "Cookie": cfg.get('cookie', ''),
-            "User-Agent": cfg.get('user_agent', '') 
-        }
-        self.user_agent = cfg.get('user_agent', '')
-        self.cookies = cfg.get('cookie', '')
-        self.token=cfg.get('token','')
-        self.Gather_Content=cfg.get('gather_content',False)
         session=  requests.Session()
         timeout = (5, 10)
         session.timeout = timeout
         self.session=session
+        self.get_token()
+    def get_token(self):
+        cfg.reload()
+        self.Gather_Content=cfg.get('gather_content',False)
+        self.user_agent = cfg.get('user_agent', '')
+        self.cookies = cfg.get('cookie', '')
+        self.token=cfg.get('token','')
+        self.headers = {
+            "Cookie":self.cookies,
+            "User-Agent": self.user_agent 
+        }
     def FillBack(self,CallBack=None,data=None,Ext_Data=None):
         if CallBack is not None:
             if data is not  None:
@@ -71,7 +73,7 @@ class WxGather:
             "f": "json",
             "ajax": "1"
         }
-    
+        self.get_token()
         headers = {
             "Cookie": self.cookies,
             "User-Agent":self.user_agent
@@ -103,6 +105,7 @@ class WxGather:
     
     def Start(self,mp_id=None):
         print(f"开始")
+        self.get_token()
         import time
         self.update_mps(mp_id,Feed(
           sync_time=int(time.time()),
@@ -172,4 +175,4 @@ class WxGather:
                 
         except Exception as e:
             print_error(f"更新公众号状态失败: {e}")
-            raise NotImplementedError("Subclasses should implement this method.")
+            raise NotImplementedError(f"更新公众号状态失败:{str(e)}")

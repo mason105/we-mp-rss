@@ -5,9 +5,11 @@ import argparse
 from string import Template
 class Config: 
     config_path=None
+    config={}
     def __init__(self,config_path=None):
         self.args=self.parse_args()
         self.config_path = config_path or self.args.config
+        self.get_config()
     def parse_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-config', help='配置文件', default='config.yaml')
@@ -16,9 +18,8 @@ class Config:
         args, _ = parser.parse_known_args()
         return args
     def save_config(self):
-        global config
         with open(self.config_path, 'w', encoding='utf-8') as f:
-            yaml.dump(config, f)
+            yaml.dump(self.config, f)
     def replace_env_vars(self,data):
             if isinstance(data, dict):
                 return {k: self.replace_env_vars(v) for k, v in data.items()}
@@ -38,24 +39,23 @@ class Config:
                     return data
             return data
     def get_config(self):
-        global config
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
-                # config = self.replace_env_vars(config)
+                self.config = config
+                self._config = self.replace_env_vars(config)
                 return config
         except Exception as e:
             print(f"Error loading configuration file {self.config_path}: {e}")
             sys.exit(1)
     def reload(self):
-        self.get_config()
+        self.config=self.get_config()
     def set(self,key,default:any=None):
-        global config
-        config[key] = default
+        self.config[key] = default
         self.save_config()
+        self.reload()
     def get(self,key,default:any=None):
-        global config
-        _config=self.replace_env_vars(config)
+        _config=self.replace_env_vars(self.config)
         if key in _config:
             return _config[key]
         else:
@@ -69,7 +69,7 @@ def set_config(key:str,value:str):
     cfg.set(key,value)
 def save_config():
     cfg.save_config()
-config = cfg.get_config()
+    
 DEBUG=cfg.get("debug",False)
 APP_NAME=cfg.get("app_name","we-mp-rss")
 from core.ver import VERSION,API_BASE
