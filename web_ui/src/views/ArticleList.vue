@@ -137,7 +137,7 @@ import { getArticles,deleteArticle as deleteArticleApi  } from '@/api/article'
 import { QRCode, checkQRCodeStatus } from '@/api/auth'
 import { getSubscriptions, UpdateMps } from '@/api/subscription'
 import { Message, Modal } from '@arco-design/web-vue'
-import { formatDateTime } from '@/utils/date'
+import { formatDateTime,formatTimestamp } from '@/utils/date'
 import router from '@/router'
 import {  deleteMpApi } from '@/api/subscription'
 
@@ -216,12 +216,21 @@ const columns = [
     }
   },
   {
-    title: '发布时间',
+    title: '更新时间',
     dataIndex: 'created_at',
     width: '10%',
     render: ({ record }) => h('span',
       { style: { color: 'var(--color-text-3)', fontSize: '12px' } },
       formatDateTime(record.created_at)
+    )
+  },
+  {
+    title: '发布时间',
+    dataIndex: 'publish_time',
+    width: '10%',
+    render: ({ record }) => h('span',
+      { style: { color: 'var(--color-text-3)', fontSize: '12px' } },
+      formatTimestamp(record.publish_time)
     )
   },
   {

@@ -54,6 +54,8 @@ class WxGather:
                     "content":data['content'],
                     "publish_time":data['update_time'],
                 }
+                if 'digest' in data:
+                    art['description']=data['digest']
                 if CallBack(art):
                     art["ext"]=Ext_Data
                     art.pop("content")

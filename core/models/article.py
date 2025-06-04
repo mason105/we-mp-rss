@@ -7,6 +7,7 @@ class Article(Base):
     pic_url = Column(String(500))
     url=Column(String(500))
     content = Column(Text)
+    description=Column(String(800))
     status = Column(Integer,default=1)
     publish_time = Column(Integer)
     created_at = Column(DateTime)
