@@ -189,8 +189,8 @@ npm run build
 2. 更新相关文档
 3. 遵循代码风格指南
 # 仓库地址
-- [GitHub](https://github.com/rachelos/we-mp-rss)https://github.com/rachelos/we-mp-rss
-- [Gitee](https://gitee.com/rachel_os/we-mp-rss)https://gitee.com/rachel_os/we-mp-rss
+- [GitHub：](https://github.com/rachelos/we-mp-rss)https://github.com/rachelos/we-mp-rss
+- [Gitee：](https://gitee.com/rachel_os/we-mp-rss)https://gitee.com/rachel_os/we-mp-rss
 
 
 # 友情链接
