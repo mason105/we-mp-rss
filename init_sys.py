@@ -14,13 +14,13 @@ def init_user(_db: db.Db):
     try:
       username,password=os.getenv("USERNAME", "admin"),os.getenv("PASSWORD", "admin@123")
       _db.create_tables()
-     
-      _db.session.merge(User(
+      session=_db.get_session()
+      session.merge(User(
           id=0,
           username=username,
           password_hash=pwd_context.hash(password),
           ))
-      _db.session.commit()
+      session.commit()
     except Exception as e:
         print_error(f"Init error: {str(e)}")
         pass

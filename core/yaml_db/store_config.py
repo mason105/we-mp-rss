@@ -38,7 +38,7 @@ class ConfigManager:
     def _store_single_config(self, key, value, description=""):
         """存储单个配置项到数据库"""
         try:
-            db.session.merge(ConfigManagement(
+            db.get_session().merge(ConfigManagement(
                 config_key=key,
                 config_value=str(value) if value is not None else '',
                 description=description
@@ -52,7 +52,7 @@ class ConfigManager:
         """将配置文件中的所有配置项存储到数据库"""
         self.logger.info("开始存储配置到数据库...")
         config = self._load_config()
-        
+        session=db.get_session()
         try:
             for key, value in config.items():
                 if isinstance(value, dict):
@@ -71,11 +71,11 @@ class ConfigManager:
                         "系统配置项"
                     )
             
-            db.session.commit()
+            session.commit()
             self.logger.info("配置已成功存储到ConfigManagement表")
             return True
         except Exception as e:
-            db.session.rollback()
+            session.rollback()
             self.logger.error(f"存储配置失败: {str(e)}")
             return False
 

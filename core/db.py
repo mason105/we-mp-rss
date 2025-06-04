@@ -10,7 +10,7 @@ from core.models.base import Base
 
 class Db:
     def __init__(self):
-        self.session: Optional[sessionmaker] = None
+        self._session: Optional[sessionmaker] = None
         self.engine = None
         
     def init(self, con_str: str) -> None:
@@ -18,7 +18,7 @@ class Db:
         try:
             self.engine = create_engine(con_str)
             Session = sessionmaker(bind=self.engine)
-            self.session = Session()
+            self._session = Session()
         except Exception as e:
             print(f"Error creating database connection: {e}")
             raise
@@ -30,8 +30,8 @@ class Db:
         
     def close(self) -> None:
         """Close the database connection"""
-        if self.session:
-            self.session.close()
+        if self._session:
+            self._session.close()
             
     def __enter__(self):
         return self
@@ -51,17 +51,17 @@ class Db:
             art.updated_at=datetime.strptime(art.updated_at,'%Y-%m-%d %H:%M:%S')
             from core.models.base import DATA_STATUS
             art.status=DATA_STATUS.ACTIVE
-            self.session.add(art) 
-            self.session.commit()
+            self._session.add(art) 
+            self._session.commit()
         except Exception as e:
-            self.session.rollback()
+            self._session.rollback()
             print(f"Failed to add article: {e}",e)
             return False
         return True    
         
     def get_articles(self, id:str=None, limit:int=30, offset:int=0) -> List[Article]:
         try:
-            data = self.session.query(Article).limit(limit).offset(offset)
+            data = self._session.query(Article).limit(limit).offset(offset)
             return data
         except Exception as e:
             print(f"Failed to fetch Feed: {e}")
@@ -70,7 +70,7 @@ class Db:
     def get_all_mps(self) -> List[Feed]:
         """Get all Feed records"""
         try:
-            return self.session.query(Feed).all()
+            return self._session.query(Feed).all()
         except Exception as e:
             print(f"Failed to fetch Feed: {e}")
             return e
@@ -78,7 +78,7 @@ class Db:
     def get_mps_list(self, mp_ids:str) -> List[Feed]:
         try:
             ids=mp_ids.split(',')
-            data = self.session.query(Feed).filter(Feed.id.in_(ids)).all()
+            data = self._session.query(Feed).filter(Feed.id.in_(ids)).all()
             return data
         except Exception as e:
             print(f"Failed to fetch Feed: {e}")
@@ -86,7 +86,7 @@ class Db:
     def get_mps(self, mp_id:str) -> Optional[Feed]:
         try:
             ids=mp_id.split(',')
-            data = self.session.query(Feed).filter_by(id= mp_id).first()
+            data = self._session.query(Feed).filter_by(id= mp_id).first()
             return data
         except Exception as e:
             print(f"Failed to fetch Feed: {e}")
@@ -98,9 +98,9 @@ class Db:
         
     def get_session(self):
         """获取数据库会话"""
-        if not self.session:
+        if not self._session:
             raise Exception("Database not initialized")
-        return self.session
+        return self._session
 
 # 全局数据库实例
 DB = Db()

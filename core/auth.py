@@ -23,7 +23,7 @@ def get_user(username: str) -> Optional[DBUser]:
     try:
         return session.query(DBUser).filter(DBUser.username == username).first()
     finally:
-        session.close()
+        DB.close()
 
 def authenticate_user(username: str, password: str) -> Optional[DBUser]:
     """验证用户凭据"""
