@@ -47,6 +47,8 @@ class Config:
         except Exception as e:
             print(f"Error loading configuration file {self.config_path}: {e}")
             sys.exit(1)
+    def reload(self):
+        self.get_config()
     def set(self,key,default:any=None):
         global config
         config[key] = default

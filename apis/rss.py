@@ -71,16 +71,16 @@ async def update_rss_feeds(
     feed_id: str,
     limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    current_user: dict = Depends(get_current_user)
+    # current_user: dict = Depends(get_current_user)
 ):
         #如果需要放开授权，请只允许内网访问，防止 被利用攻击 放开授权办法，注释上面current_user: dict = Depends(get_current_user)
 
-        from core.models.feed import Feed
-        mp = DB.session.query(Feed).filter(Feed.id == feed_id).first()
-        from core.wx import WxGather
-        wx=WxGather().Model()
-        wx.get_Articles(mp.faker_id,Mps_id=mp.id,CallBack=UpdateArticle)
-        result=wx.articles
+        # from core.models.feed import Feed
+        # mp = DB.session.query(Feed).filter(Feed.id == feed_id).first()
+        # from core.wx import WxGather
+        # wx=WxGather().Model()
+        # wx.get_Articles(mp.faker_id,Mps_id=mp.id,CallBack=UpdateArticle)
+        # result=wx.articles
 
         return await get_mp_articles_rss(request=request,feed_id=feed_id, limit=limit,offset=offset, is_update=True)
 

@@ -10,7 +10,7 @@ from core.auth import (
 from .ver import API_VERSION
 from .base import success_response, error_response
 from driver.wx import WX_API
-from core.config import set_config
+from core.config import set_config, cfg
 router = APIRouter(prefix=f"/auth", tags=["认证"])
 
 
@@ -21,6 +21,7 @@ def Success(data):
             print(f"Token: {data['token']}")
             set_config("cookie",(data['cookies_str']))
             set_config("token",data['token'])
+            cfg.reload()
     else:
             print("\n登录失败，请检查上述错误信息")
 @router.get("/qr/code", summary="获取登录二维码")

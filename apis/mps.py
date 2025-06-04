@@ -34,7 +34,7 @@ async def search_mp(
             status_code=status.HTTP_201_CREATED,
             detail=error_response(
                 code=50001,
-                message="搜索公众号失败"
+                message=f"搜索公众号失败,请重新扫码授权！{str(e)}",
             )
         )
     finally:

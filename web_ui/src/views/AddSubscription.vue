@@ -132,7 +132,7 @@ const handleSearch = async (value: string) => {
     })
     searchResults.value = res.list || []
   } catch (error) {
-    Message.error('搜索公众号失败')
+    // Message.error('搜索公众号失败')
     searchResults.value = []
   }
 }

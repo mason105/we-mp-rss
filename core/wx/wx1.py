@@ -77,8 +77,7 @@ class MpsApi(WxGather):
                 
                 msg = resp.json()
 
-                if msg['base_resp']['ret'] != 0:
-                    super().Error(msg['base_resp'])
+                
                 # 流量控制了, 退出
                 if msg['base_resp']['ret'] == 200013:
                     super().Error("frequencey control, stop at {}".format(str(begin)))
@@ -92,7 +91,9 @@ class MpsApi(WxGather):
                 if 'app_msg_list' not in msg:
                     super().Error("all ariticle parsed")
                     break
-                    
+                if msg['base_resp']['ret'] != 0:
+                    super().Error("错误原因:{}:代码:{}".format(msg['base_resp']['err_msg'],msg['base_resp']['ret']))
+                    break    
                 if "app_msg_list" in msg:
                     for item in msg["app_msg_list"]:
                         time.sleep(random.randint(1,3))

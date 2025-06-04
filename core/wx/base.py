@@ -6,6 +6,8 @@ from core.db import DB
 from core.models.feed import Feed
 from core.config import Config
 from core.config import cfg
+from core.print import print_error,print_info
+
 # 定义基类
 class WxGather:
     articles=[]
@@ -83,13 +85,19 @@ class WxGather:
             )
             response.raise_for_status()  # 检查状态码是否为200
             data = response.text  # 解析JSON数据
-            data = json.loads(data)  # 手动解析
-            if 'publish_page' in data:
-                data['publish_page']=json.loads(data['publish_page'])
+            msg = json.loads(data)  # 手动解析
+            if msg['base_resp']['ret'] == 200013:
+                self.Error("frequencey control, stop at {}".format(str(kw)))
+                return
+            if msg['base_resp']['ret'] != 0:
+                self.Error("错误原因:{}:代码:{}".format(msg['base_resp']['err_msg'],msg['base_resp']['ret']))
+                return 
+            if 'publish_page' in msg:
+                msg['publish_page']=json.loads(msg['publish_page'])
         except Exception as e:
-            print(f"请求失败: {e}")
-            return None
-        return data
+            print_error(f"请求失败: {e}")
+            raise e
+        return msg
     
     
     
@@ -107,7 +115,6 @@ class WxGather:
     def Error(self,error:str):
         self.Over()
         raise Exception(error)
-        print("错误")
     def Over(self,data=None):
         if getattr(self, 'articles', None) is not None:
             print(f"成功{len(self.articles)}条")
@@ -159,10 +166,10 @@ class WxGather:
                         setattr(feed, key, value)
                     session.commit()
                 else:
-                    print(f"未找到ID为{mp_id}的公众号记录")
+                    print_error(f"未找到ID为{mp_id}的公众号记录")
             finally:
                 session.close()
                 
         except Exception as e:
-            print(f"更新公众号状态失败: {e}")
+            print_error(f"更新公众号状态失败: {e}")
             raise NotImplementedError("Subclasses should implement this method.")
