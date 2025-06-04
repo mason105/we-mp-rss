@@ -22,8 +22,9 @@ def get_user(username: str) -> Optional[DBUser]:
     session = DB.get_session()
     try:
         return session.query(DBUser).filter(DBUser.username == username).first()
-    finally:
-        DB.close()
+    except Exception as e:
+        print(f"获取用户错误: {str(e)}")
+        return None
 
 def authenticate_user(username: str, password: str) -> Optional[DBUser]:
     """验证用户凭据"""

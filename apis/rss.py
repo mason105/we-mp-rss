@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, Request
+from fastapi import APIRouter, Depends, Query, HTTPException, Request,Response
 from fastapi import status
 from fastapi.responses import Response
 from core.db import DB
@@ -46,7 +46,7 @@ async def get_rss_feeds(
         } for feed in feeds]
         
         # 生成RSS XML
-        rss_xml = rss.generate_rss(rss_list, title="WeRSS订阅",others={"total": str(total),"offset": str(offset),"limit": str(limit)})
+        rss_xml = rss.generate_rss(rss_list, title="WeRSS订阅")
         
         return Response(
             content=rss_xml,
@@ -63,6 +63,51 @@ async def get_rss_feeds(
         )
     finally:
         session.close()
+
+@router.get("/feed/{content_id}", summary="获取缓存的文章内容")
+async def get_rss_feed(content_id: str):
+    rss = RSS()
+    content = rss.get_cached_content(content_id)
+      
+    if content is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=error_response(
+                code=40402,
+                message="文章内容未找到"
+            )
+        )
+    title=content['title']
+    html='''
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>{title}</title>
+        </head>
+    <body>
+    <center>
+    <h1 style="text-align:center;">{title}</h1>
+    <div class="author">来源:{source}</div>
+    <div class="author">发布时间:{publish_time}</div>
+    <div class="copyright">
+        <p>
+        本文章仅用于学习和交流目的，不代表本网站观点和立场，如涉及版权问题，请及时联系我们删除。
+        </p>
+    </div>
+    <div id=content>{text}</div>
+    </center>
+    </body>
+    </html>
+    '''
+    text=rss.add_logo_prefix_to_urls(content['content'])
+    html=html.format(title=title,text=text,source=content['mp_name'],publish_time=content['publish_time'])
+    return Response(
+            content=html,
+            media_type="text/html"
+        )
 def UpdateArticle(art:dict):
             return DB.add_article(art)
 @router.api_route("/{feed_id}/fresh", summary="更新并获取公众号文章RSS")
@@ -124,13 +169,26 @@ async def get_mp_articles_rss(
         rss_list = [{
             "id": str(article.id),
             "title": article.title,
-            "link": article.url if article.url else f"https://mp.weixin.qq.com/s/{article.id}",
+            "link":  f"{request.base_url}rss/feed/{article.id}",
             "description": article.title,
             "updated": article.updated_at.isoformat()
         } for article in articles]
         
+
+        # 缓存文章内容
+        for article in articles:
+            content_data = {
+                "id": article.id,
+                "title": article.title,
+                "content": article.content,
+                "publish_time": article.publish_time,
+                "mp_id": article.mp_id,
+                "mp_name": feed.mp_name
+            }
+            rss.cache_content(article.id, content_data)
+        
         # 生成RSS XML
-        rss_xml = rss.generate_rss(rss_list, title=f"{feed.mp_name}",others={"total": str(total),"offset": str(offset),"limit": str(limit)})
+        rss_xml = rss.generate_rss(rss_list, title=f"{feed.mp_name}")
         
         return Response(
             content=rss_xml,

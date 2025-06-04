@@ -1,8 +1,10 @@
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 import os
+import json
 class RSS:
     cache_dir = os.path.normpath("static/cache/rss")
+    content_cache_dir = os.path.normpath("static/cache/content")
     rss_file="all"
     
     def __init__(self, name:str="all",cache_dir: str = None):
@@ -10,11 +12,34 @@ class RSS:
             self.cache_dir = cache_dir
       
         os.makedirs(self.cache_dir, exist_ok=True)
+        os.makedirs(self.content_cache_dir, exist_ok=True)
         normalized_path = os.path.normpath(f"{self.cache_dir}/{name}.xml")
         if not normalized_path.startswith(self.cache_dir):
             raise ValueError("Invalid file path: Path traversal detected.")
         self.rss_file = normalized_path
         pass
+
+    def cache_content(self, content_id: str, content: dict):
+        """缓存文章内容"""
+        content["content"]=self.add_logo_prefix_to_urls(content["content"])
+        content_path = os.path.normpath(f"{self.content_cache_dir}/{content_id}.json")
+        if not content_path.startswith(self.content_cache_dir):
+            raise ValueError("Invalid content path: Path traversal detected.")
+        
+        with open(content_path, "w", encoding="utf-8") as f:
+            json.dump(content, f, ensure_ascii=False, indent=2)
+
+    def get_cached_content(self, content_id: str) -> dict:
+        """获取缓存的文章内容"""
+        content_path = os.path.normpath(f"{self.content_cache_dir}/{content_id}.json")
+        if not content_path.startswith(self.content_cache_dir):
+            raise ValueError("Invalid content path: Path traversal detected.")
+        
+        try:
+            with open(content_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return None
     def serialize_datetime(self,obj):
         if isinstance(obj, datetime):
             return obj.isoformat
@@ -33,8 +58,8 @@ class RSS:
         except FileNotFoundError:
             return None 
     def generate_rss(self,rss_list: dict, title: str = "Mp-We-Rss", 
-                    author: str = "Rachel", link: str = "https://github.com/rachelos/we-mp-rss",
-                    description: str = "RSS频道", language: str = "zh-CN",others: dict = None):
+                    link: str = "https://github.com/rachelos/we-mp-rss",
+                    description: str = "RSS频道", language: str = "zh-CN"):
         # 创建根元素(RSS标准)
         rss = ET.Element("rss", version="2.0")
         channel=ET.SubElement(rss, "channel")
@@ -53,8 +78,7 @@ class RSS:
             ET.SubElement(item, "guid").text = rss_item["link"]
             # ET.SubElement(item, "category").text = rss_item["category"]
             # ET.SubElement(item, "author").text = rss_item["author"]
-            link=ET.SubElement(item, "link")
-            link.text = rss_item["link"]
+            ET.SubElement(item, "link").text = rss_item["link"]
             ET.SubElement(item, "pubDate").text = self.datetime_to_rfc822(str(rss_item["updated"]))
 
         # 生成XML字符串(添加声明和美化输出)
@@ -65,3 +89,16 @@ class RSS:
             with open(self.rss_file, "w", encoding="utf-8") as f:
                 f.write(tree_str)
         return tree_str
+
+    def add_logo_prefix_to_urls(self, text: str) -> str:
+        """在字符串中所有http/https开头的图片URL前添加/static/res/logo/前缀
+        
+        Args:
+            text: 包含URL的原始字符串
+            
+        Returns:
+            处理后的字符串，所有图片URL前添加了前缀
+        """
+        import re
+        pattern = re.compile(r'(<img[^>]*src=["\'])(?!\/static\/res\/logo\/)([^"\']*)', re.IGNORECASE)
+        return pattern.sub(r'\1/static/res/logo/\2', text)

@@ -29,15 +29,15 @@ http://<您的ip>:8001/  即可开启
 
 ## 界面截图
 - 登录界面  
-<img src="docs/登录.png" alt="登录" width="80%"/><br/>
+<img src="https://github.com/rachelos/we-mp-rss/blob/main/docs/登录.png" alt="登录" width="80%"/><br/>
 - 主界面  
-<img src="docs/主界面.png" alt="主界面" width="80%"/><br/>
+<img src="https://github.com/rachelos/we-mp-rss/blob/main/docs/主界面.png" alt="主界面" width="80%"/><br/>
 
 - 添加订阅  
-<img src="docs/添加订阅.png" alt="添加订阅" width="80%"/><br/>
+<img src="https://github.com/rachelos/we-mp-rss/blob/main/docs/添加订阅.png" alt="添加订阅" width="80%"/><br/>
 
 - 扫码授权  
-<img src="docs/扫码授权.png" alt="扫码授权" width="80%"/><br/>
+<img src="https://github.com/rachelos/we-mp-rss/blob/main/docs/扫码授权.png" alt="扫码授权" width="80%"/><br/>
 ## 系统架构
 
 项目采用前后端分离架构：
@@ -199,7 +199,7 @@ npm run build
 
 # ❤️ 赞助
 如果觉得 We-MP-RSS 对你有帮助，欢迎给我来一杯啤酒！<br/>
-<img src="docs/赞赏码.jpg" width=180/>
+<img src="https://github.com/rachelos/we-mp-rss/blob/main/docs/赞赏码.jpg" width=180/>
 
 
 
