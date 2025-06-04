@@ -20,6 +20,7 @@ class Config:
     def save_config(self):
         with open(self.config_path, 'w', encoding='utf-8') as f:
             yaml.dump(self.config, f)
+        self.reload()
     def replace_env_vars(self,data):
             if isinstance(data, dict):
                 return {k: self.replace_env_vars(v) for k, v in data.items()}
@@ -53,7 +54,6 @@ class Config:
     def set(self,key,default:any=None):
         self.config[key] = default
         self.save_config()
-        self.reload()
     def get(self,key,default:any=None):
         _config=self.replace_env_vars(self.config)
         if key in _config:
