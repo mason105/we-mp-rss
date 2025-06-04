@@ -7,6 +7,8 @@ if __name__ == '__main__':
         import init_sys as init
         #如果没有用户，就创建一个
         threading.Thread(target=init.init,daemon=True).start()
+        from core.yaml_db import YamlDB
+        YamlDB.store_config_to_db()
     if  cfg.args.job =="True":
         from jobs import start_job
      

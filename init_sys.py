@@ -14,16 +14,15 @@ def init_user(_db: db.Db):
     try:
       username,password=os.getenv("USERNAME", "admin"),os.getenv("PASSWORD", "admin@888")
       _db.create_tables()
-      
      
-      _db.session.add(User(
+      _db.session.merge(User(
           id=0,
           username=username,
           password_hash=pwd_context.hash(password),
           ))
       _db.session.commit()
     except Exception as e:
-        print(f"Init error: {str(e)}")
+        print_error(f"Init error: {str(e)}")
         pass
 def sync_models():
      # 同步模型到表结构

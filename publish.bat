@@ -24,3 +24,4 @@ git tag  "v%VERSION%" -m "%comment%"
 git commit -m "%VERSION%"
 git push -u origin main 
 git push origin  %tag%
+git push -u gitee main 

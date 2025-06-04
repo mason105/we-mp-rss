@@ -188,6 +188,10 @@ npm run build
 1. 代码通过所有测试
 2. 更新相关文档
 3. 遵循代码风格指南
+# 仓库地址
+[GitHub](https://github.com/rachelos/we-mp-rss)
+[Gitee](https://gitee.com/rachel_os/we-mp-rss)
+
 
 # 友情链接
 [WeWe RSS](https://github.com/cooderl/wewe-rss)
