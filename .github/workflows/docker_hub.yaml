@@ -7,8 +7,7 @@ on:
 
 env:
   REGISTRY: docker.io
-#   IMAGE_NAME: ${{ github.repository }}
-  IMAGE_NAME: we-mp-rss:latest
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -45,5 +44,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+        #   tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
           labels: ${{ steps.meta.outputs.labels }}
