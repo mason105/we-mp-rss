@@ -38,11 +38,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      - name: Build Docker Image and push to Docker Hub
+        run: |-
+             docker build -t rachelos/${{github.repository}}:latest .
+             docker push rachelos/${{github.repository}}:latest
           
