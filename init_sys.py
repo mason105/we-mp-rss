@@ -37,13 +37,17 @@ import core.db as db
 bk_db=db.Db()
 
 def back_init_data():
-    os.remove("./init.db")
-    # 初始化数据
-    bk_db.init("sqlite:///init.db")
-    bk_db.create_tables()
-    init_user(bk_db)
-    #数据结构处理完成
-    print_info("数据结构处理完成")
+    try:
+        os.remove("./init.db")
+        # 初始化数据
+        bk_db.init("sqlite:///init.db")
+        bk_db.create_tables()
+        init_user(bk_db)
+        #数据结构处理完成
+        print_info("数据结构处理完成")
+    except Exception as e:
+        print_error(f"Init error: {str(e)}")
+        return False
     pass
  
 def init():

@@ -74,7 +74,7 @@ class RSS:
             item = ET.SubElement(channel, "item")
             ET.SubElement(item, "id").text = rss_item["id"]
             ET.SubElement(item, "title").text = rss_item["title"]
-            ET.SubElement(item, "description").text = rss_item["description"]
+            ET.SubElement(item, "description").text = rss_item["description"] 
             ET.SubElement(item, "guid").text = rss_item["link"]
             # ET.SubElement(item, "category").text = rss_item["category"]
             # ET.SubElement(item, "author").text = rss_item["author"]

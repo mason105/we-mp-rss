@@ -6,8 +6,40 @@ from core.rss import RSS
 from core.models.feed import Feed
 from .base import success_response, error_response
 from core.auth import get_current_user
+from core.config import cfg
+
+def verify_rss_access(current_user: dict = Depends(get_current_user)):
+    """
+    RSS访问认证方法
+    :param current_user: 当前用户信息
+    :return: 认证通过返回用户信息，否则抛出HTTP异常
+    """
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=error_response(
+                code=40101,
+                message="未授权的RSS访问"
+            )
+        )
+    return current_user
 
 router = APIRouter(prefix="/rss",tags=["RSS源"])
+
+@router.post("/{feed_id}/api", summary="获取特定RSS源详情")
+async def get_rss_source(
+    feed_id: str,
+    request: Request,
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    # current_user: dict = Depends(verify_rss_access)
+):
+    return await get_mp_articles_rss(request=request,feed_id=feed_id, limit=limit,offset=offset, is_update=True)
+
+
+
+
+
 @router.get("/fresh", summary="更新并获取RSS订阅列表")
 async def update_rss_feeds( 
     request: Request,
@@ -36,11 +68,12 @@ async def get_rss_feeds(
     try:
         total = session.query(Feed).count()
         feeds = session.query(Feed).order_by(Feed.created_at.desc()).limit(limit).offset(offset).all()
+        rss_domain=cfg.get("rss_base_url",request.base_url)
         # 转换为RSS格式数据
         rss_list = [{
             "id": str(feed.id),
             "title": feed.mp_name,
-            "link":  f"{request.base_url}rss/{feed.id}",
+            "link":  f"{rss_domain}rss/{feed.id}",
             "description": feed.mp_intro,
             "updated": feed.created_at.isoformat()
         } for feed in feeds]
@@ -170,7 +203,7 @@ async def get_mp_articles_rss(
             "id": str(article.id),
             "title": article.title,
             "link":  f"{request.base_url}rss/feed/{article.id}",
-            "description": article.description,
+            "description": article.description ,
             "updated": article.updated_at.isoformat()
         } for article in articles]
         
@@ -196,12 +229,4 @@ async def get_mp_articles_rss(
         )
     except Exception as e:
         print(f"获取公众号文章RSS错误:",e)
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail=error_response(
-                code=50002,
-                message="获取公众号文章RSS失败"
-            )
-        )
-    finally:
-        session.close()
+        raise e
