@@ -38,9 +38,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Build Docker Image and push to Docker Hub
+      - name: Build  Image and push to Docker Hub
         run: |-
              docker build -t rachelos/${{github.repository}}:latest .
              docker push rachelos/${{github.repository}}:latest
           
-             
