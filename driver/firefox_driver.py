@@ -70,6 +70,14 @@ class FirefoxController:
                 if not self._is_firefox_installed_linux():
                     print("正在通过包管理器安装Firefox...")
                     subprocess.run([ "apt-get", "install","--no-install-recommends","-f" ,"-y", "firefox"], check=True)
+            elif self.system == "darwin":
+                # macOS安装逻辑
+                if not self._is_firefox_installed_mac():
+                    print("请手动安装Firefox浏览器：")
+                    print("1. 访问 https://www.mozilla.org/firefox/new/")
+                    print("2. 下载并安装Firefox")
+                    print("3. 将Firefox.app移动到Applications文件夹")
+                    raise Exception("macOS系统需要手动安装Firefox")
         except Exception as e:
             print(f"Firefox安装失败: {str(e)}")
             raise
@@ -89,6 +97,14 @@ class FirefoxController:
             return True
         except subprocess.CalledProcessError:
             return False
+
+    def _is_firefox_installed_mac(self):
+        """检查macOS是否已安装Firefox"""
+        common_paths = [
+            "/Applications/Firefox.app/Contents/MacOS/firefox",
+            os.path.expanduser("~/Applications/Firefox.app/Contents/MacOS/firefox")
+        ]
+        return any(os.path.exists(path) for path in common_paths)
 
     def _validate_existing_driver(self, path):
         """验证现有驱动是否可用"""
@@ -118,7 +134,14 @@ class FirefoxController:
         return True
     def get_driver_path(self):
         """根据操作系统返回正确的driver路径"""
-        driver_name = "geckodriver.exe" if self.system == "windows" else "geckodriver"
+        if self.system == "windows":
+            driver_name = "geckodriver.exe"
+        elif self.system == "darwin":
+            # macOS系统添加架构后缀
+            arch_suffix = "_arm64" if platform.machine() == "arm64" else "_intel"
+            driver_name = f"geckodriver{arch_suffix}"
+        else:
+            driver_name = "geckodriver"
         return os.path.join(os.path.dirname(__file__), "driver", driver_name)
     def _setup_driver(self):
         """自动配置geckodriver"""
@@ -161,7 +184,7 @@ class FirefoxController:
                     platform_name = "linux64"
                     ext = "tar.gz"
                 elif self.system == "darwin":
-                    platform_name = "macos" if platform.machine() == "arm64" else "macos"
+                    platform_name = "macos-aarch64" if platform.machine() == "arm64" else "macos"
                     ext = "tar.gz"
                 else:
                     raise Exception(f"不支持的系统: {self.system}")
@@ -180,6 +203,18 @@ class FirefoxController:
                     extract_path = os.path.join(driver_dir, "geckodriver.exe")
                     with zipfile.ZipFile(archive_path) as zip_ref:
                         zip_ref.extract("geckodriver.exe", path=driver_dir)
+                elif self.system == "darwin":
+                    # 为macOS添加架构后缀
+                    arch_suffix = "_arm64" if platform.machine() == "arm64" else "_intel"
+                    extract_path = os.path.join(driver_dir, f"geckodriver{arch_suffix}")
+                    with tarfile.open(archive_path, "r:gz") as tar:
+                        # 先提取到临时路径，然后重命名
+                        tar.extract("geckodriver", path=driver_dir)
+                        temp_path = os.path.join(driver_dir, "geckodriver")
+                        if os.path.exists(extract_path):
+                            os.remove(extract_path)
+                        os.rename(temp_path, extract_path)
+                    os.chmod(extract_path, 0o755)
                 else:
                     extract_path = os.path.join(driver_dir, "geckodriver")
                     with tarfile.open(archive_path, "r:gz") as tar:
@@ -210,6 +245,13 @@ class FirefoxController:
                     ] if os.path.exists(p)), None)
             elif self.system == "linux":
                 self.browser_path = "/usr/bin/firefox"
+            elif self.system == "darwin":
+                # macOS Firefox路径
+                possible_paths = [
+                    "/Applications/Firefox.app/Contents/MacOS/firefox",
+                    os.path.expanduser("~/Applications/Firefox.app/Contents/MacOS/firefox")
+                ]
+                self.browser_path = next((p for p in possible_paths if os.path.exists(p)), None)
             
             if not self.browser_path:
                 raise Exception("无法找到Firefox浏览器路径")

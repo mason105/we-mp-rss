@@ -9,6 +9,7 @@ from core.models.base import Base
 # Base = declarative_base()
 
 class Db:
+    connection_str: str=None
     def __init__(self):
         self._session: Optional[sessionmaker] = None
         self.engine = None
@@ -16,6 +17,7 @@ class Db:
     def init(self, con_str: str) -> None:
         """Initialize database connection and create tables"""
         try:
+            self.connection_str=con_str
             self.engine = create_engine(con_str)
             Session = sessionmaker(bind=self.engine)
             self._session = Session()
@@ -100,7 +102,8 @@ class Db:
     def get_session(self):
         """获取数据库会话"""
         if not self._session:
-            raise Exception("Database not initialized")
+            self.init(self.connection_str)
+            print("Database reinitialized")
         return self._session
 
 # 全局数据库实例
