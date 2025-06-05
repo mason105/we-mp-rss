@@ -6,7 +6,7 @@ from core.wx import WxGather
 from core.log import logger
 from core.task import TaskScheduler
 from core.models.feed import Feed
-from core.config import cfg
+from core.config import cfg,DEBUG
 wx_db=db.Db()
 wx_db.init(cfg.get("db"))
 def fetch_all_article():
@@ -62,7 +62,8 @@ def start_job():
     for task in tasks:
         cron_exp=task.cron_exp
         # cron_exp="*/1 * * * *"
-        cron_exp="* * * * * *"
+        if DEBUG:
+            cron_exp="* * * * * *"
         job_id=scheduler.add_cron_job(add_job,cron_expr=cron_exp,args=[get_feeds(task)])
         print(f"已添加任务: {job_id}")
     scheduler.start()

@@ -170,7 +170,7 @@ async def get_mp_articles_rss(
             "id": str(article.id),
             "title": article.title,
             "link":  f"{request.base_url}rss/feed/{article.id}",
-            "description": article.title,
+            "description": article.description,
             "updated": article.updated_at.isoformat()
         } for article in articles]
         

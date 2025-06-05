@@ -14,7 +14,8 @@ def get_message_task() -> list[MessageTask]:
         包含消息任务详情的字典，或None如果任务不存在
     """
     try:
-        message_task = DB.session.query(MessageTask).filter(MessageTask.status==1).all()
+        session=DB.get_session()
+        message_task = session.query(MessageTask).filter(MessageTask.status==1).all()
         if not message_task:
             return None
         return message_task
