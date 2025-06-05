@@ -10,8 +10,8 @@
 docker run -d  --name we-mp-rss  -p 8001:8001   ghcr.io/rachelos/we-mp-rss:latest
 ```
 http://<您的ip>:8001/  即可开启
-官方镜像和代理镜像
 
+# 官方镜像和代理镜像
 ```
 docker run -d  --name we-mp-rss  -p 8001:8001   rachelos/we-mp-rss:latest
 docker run -d  --name we-mp-rss  -p 8001:8001   docker.1ms.run/rachelos/we-mp-rss:latest
