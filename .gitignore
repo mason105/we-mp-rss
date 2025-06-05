@@ -3,7 +3,7 @@ __pycache__
 config.yaml
 *.pyc
 dock_build.bat
-db.db
+./db.db
 .vscode
 *.log
 item
