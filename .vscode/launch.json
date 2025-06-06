@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "env": {
-                "DB":"sqlite:///db.db",
+                // "DB":"sqlite:///data/db.db",
                 // "DB":"mysql+pymysql://we-rss:123456@119.3.239.67/we-rss",
                 "PORT": "8001",
                 "USERNAME":"admin",

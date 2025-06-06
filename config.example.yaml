@@ -2,13 +2,13 @@ app_name: we-mp-rss
 cookie: 
 
 #数据库连接 例如db:  mysql+pymysql://<username>:<password>@<host>/we-rss
-db: ${DB:-sqlite:///db.db}
+db: ${DB:-sqlite:///data/db.db}
 
 #通知
 notice:
-  dingding: "${DINGDING_WEBHOOK:-''}"
-  wechat: "${WECHAT_WEBHOOK:-''}"
-  feishu: "${FEISHU_WEBHOOK:-''}"
+  dingding: "${DINGDING_WEBHOOK}"
+  wechat: "${WECHAT_WEBHOOK}"
+  feishu: "${FEISHU_WEBHOOK}"
   
 secret: ${SECRET_KEY:- 'we-mp-rss'}
 token: 

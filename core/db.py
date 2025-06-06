@@ -5,6 +5,7 @@ from typing import Optional, List
 from .models import Feed, Article
 from .config import cfg
 from core.models.base import Base  
+from core.print import print_warning,print_info,print_error
 # 声明基类
 # Base = declarative_base()
 
@@ -18,6 +19,15 @@ class Db:
         """Initialize database connection and create tables"""
         try:
             self.connection_str=con_str
+            
+            # 检查SQLite数据库文件是否存在
+            if con_str.startswith('sqlite:///'):
+                import os
+                db_path = con_str[10:]  # 去掉'sqlite:///'前缀
+                if not os.path.exists(db_path):
+                    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+                    open(db_path, 'w').close()
+                    
             self.engine = create_engine(con_str)
             Session = sessionmaker(bind=self.engine)
             self._session = Session()
@@ -103,7 +113,7 @@ class Db:
         """获取数据库会话"""
         if not self._session:
             self.init(self.connection_str)
-            print("Database reinitialized")
+            print_warning("Database reinitialized")
         return self._session
 
 # 全局数据库实例
