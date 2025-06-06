@@ -21,8 +21,6 @@ interval: ${INTERVAL:- 300}
 
 model: ${MODEL:-web}
 
-#是否采集内容  默认True
-gather_content: ${GATHER_CONTENT:-True}
 
 #API服务端口
 port: ${PORT:-8001}
@@ -37,3 +35,10 @@ rss_base_url: ${RSS_BASE_URL:-""}
 
 #登录会话有效时长 单位分钟 默认60分钟
 token_expire_minutes: ${TOKEN_EXPIRE_MINUTES:-60}
+
+
+gather:
+  #是否采集内容  默认True
+  content: ${GATHER.CONTENT:-True}
+  #采集模式，web模式（可采集到发布链接)，api模式（可采集临时链接）
+  model: ${GATHER.MODEL:-web}

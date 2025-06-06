@@ -16,7 +16,7 @@ class WxGather:
             return len(self.articles)
         return 0
     def Model(self):
-        if cfg.get("model","web")=="web":
+        if cfg.get("gather.model","web")=="web":
             from core.wx import MpsWeb
             wx=MpsWeb()
         else:
@@ -33,7 +33,7 @@ class WxGather:
         self.get_token()
     def get_token(self):
         cfg.reload()
-        self.Gather_Content=cfg.get('gather_content',False)
+        self.Gather_Content=cfg.get('gather.content',False)
         self.user_agent = cfg.get('user_agent', '')
         self.cookies = cfg.get('cookie', '')
         self.token=cfg.get('token','')

@@ -72,9 +72,15 @@ class Config:
             return v
     def get(self,key,default:any=None):
         _config=self.replace_env_vars(self.config)
-        if key in _config:
-           return self.__fix(_config[key])
-        else:
+        
+        # 支持嵌套key访问
+        keys = key.split('.') if isinstance(key, str) else [key]
+        value = _config
+        try:
+            for k in keys:
+                value = value[k]
+            return self.__fix(value)
+        except (KeyError, TypeError):
             print("Key {} not found in configuration".format(key))
             if default is not None:
                 return default
