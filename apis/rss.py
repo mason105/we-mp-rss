@@ -197,12 +197,12 @@ async def get_mp_articles_rss(
         total = session.query(Article).filter(Article.mp_id == feed_id).count()
         articles = session.query(Article).filter(Article.mp_id == feed_id)\
             .order_by(Article.publish_time.desc()).limit(limit).offset(offset).all()
-        
+        rss_domain=cfg.get("rss_base_url",request.base_url)
         # 转换为RSS格式数据
         rss_list = [{
             "id": str(article.id),
             "title": article.title,
-            "link":  f"{request.base_url}rss/feed/{article.id}",
+            "link":  f"{rss_domain}rss/feed/{article.id}",
             "description": article.description ,
             "updated": article.updated_at.isoformat()
         } for article in articles]

@@ -34,3 +34,6 @@ max_page: ${MAX_PAGE:-5}
 
 #RSS域名地址：如https://www.xxx.com
 rss_base_url: ${RSS_BASE_URL:-""}
+
+#登录会话有效时长 单位分钟 默认60分钟
+token_expire_minutes: ${TOKEN_EXPIRE_MINUTES:-60}

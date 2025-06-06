@@ -54,10 +54,26 @@ class Config:
     def set(self,key,default:any=None):
         self.config[key] = default
         self.save_config()
+    def __fix(self,v:str):
+        if v in ("", "''", '""', None):
+            return None
+        try:
+            # 尝试转换为布尔值
+            if v.lower() in ('true', 'false'):
+                return v.lower() == 'true'
+            # 尝试转换为整数
+            if v.isdigit():
+                return int(v)
+            # 尝试转换为浮点数
+            if '.' in v and all(part.isdigit() for part in v.split('.') if part):
+                return float(v)
+            return v
+        except:
+            return v
     def get(self,key,default:any=None):
         _config=self.replace_env_vars(self.config)
         if key in _config:
-            return _config[key]
+           return self.__fix(_config[key])
         else:
             print("Key {} not found in configuration".format(key))
             if default is not None:

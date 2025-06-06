@@ -11,7 +11,7 @@ from core.config import  cfg,API_BASE
 # 配置
 SECRET_KEY = cfg.get("secret","csol2025")  # 生产环境应使用更安全的密钥
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(cfg.get("token_expire_minutes",30))
 
 # 密码哈希上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
