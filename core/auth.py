@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 import jwt
+import bcrypt
 from functools import wraps
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
-from passlib.context import CryptContext
 from core.models import User as DBUser
 from core.db import DB
 from core.config import  cfg,API_BASE
@@ -13,8 +13,30 @@ SECRET_KEY = cfg.get("secret","csol2025")  # 生产环境应使用更安全的�
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(cfg.get("token_expire_minutes",30))
 
+class PasswordHasher:
+    """自定义密码哈希器，替代passlib的CryptContext"""
+    
+    @staticmethod
+    def verify(plain_password: str, hashed_password: str) -> bool:
+        """验证密码是否匹配哈希"""
+        try:
+            return bcrypt.checkpw(
+                plain_password.encode('utf-8'),
+                hashed_password.encode('utf-8')
+            )
+        except (ValueError, TypeError):
+            return False
+    
+    @staticmethod
+    def hash(password: str) -> str:
+        """生成密码哈希"""
+        return bcrypt.hashpw(
+            password.encode('utf-8'),
+            bcrypt.gensalt()
+        ).decode('utf-8')
+
 # 密码哈希上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = PasswordHasher()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{API_BASE}/auth/token",auto_error=False)
 
 # 用户缓存字典

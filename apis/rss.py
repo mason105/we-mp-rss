@@ -141,6 +141,8 @@ async def get_rss_feed(content_id: str):
         )
 def UpdateArticle(art:dict):
             return DB.add_article(art)
+
+
 @router.api_route("/{feed_id}/fresh", summary="更新并获取公众号文章RSS")
 async def update_rss_feeds( 
     request: Request,
@@ -197,12 +199,14 @@ async def get_mp_articles_rss(
             .order_by(Article.publish_time.desc()).limit(limit).offset(offset).all()
         rss_domain=cfg.get("rss_base_url",request.base_url)
         # 转换为RSS格式数据
+        import datetime
         rss_list = [{
             "id": str(article.id),
             "title": article.title,
             "link":  f"{rss_domain}rss/feed/{article.id}",
             "description": article.description ,
-            "updated": article.updated_at.isoformat()
+            # "updated": article.updated_at.isoformat()
+            "updated": datetime.datetime.fromtimestamp(article.publish_time)
         } for article in articles]
         
 
