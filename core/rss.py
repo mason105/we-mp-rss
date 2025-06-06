@@ -100,5 +100,8 @@ class RSS:
             处理后的字符串，所有图片URL前添加了前缀
         """
         import re
-        pattern = re.compile(r'(<img[^>]*src=["\'])(?!\/static\/res\/logo\/)([^"\']*)', re.IGNORECASE)
-        return pattern.sub(r'\1/static/res/logo/\2', text)
+        try:
+            pattern = re.compile(r'(<img[^>]*src=["\'])(?!\/static\/res\/logo\/)([^"\']*)', re.IGNORECASE)
+            return pattern.sub(r'\1/static/res/logo/\2', text)
+        except:
+            return text
