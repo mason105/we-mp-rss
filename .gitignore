@@ -9,4 +9,4 @@ dock_build.bat
 item
 static/cache
 static/wx_qrcode.png
-./data
+data
