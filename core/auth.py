@@ -17,11 +17,22 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(cfg.get("token_expire_minutes",30))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{API_BASE}/auth/token",auto_error=False)
 
+# 用户缓存字典
+_user_cache = {}
+
 def get_user(username: str) -> Optional[DBUser]:
-    """从数据库获取用户"""
+    """从数据库获取用户，带缓存功能"""
+    # 先检查缓存
+    if username in _user_cache:
+        return _user_cache[username]
+        
     session = DB.get_session()
     try:
-        return session.query(DBUser).filter(DBUser.username == username).first()
+        user = session.query(DBUser).filter(DBUser.username == username).first()
+        if user:
+            # 存入缓存
+            _user_cache[username] = user
+        return user
     except Exception as e:
         print(f"获取用户错误: {str(e)}")
         return None
