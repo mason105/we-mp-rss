@@ -1,0 +1,29 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Python File",
+            "type": "debugpy",
+            "request": "launch",
+            "env": {
+                // "DB":"sqlite:///data/db.db",
+                // "DB":"mysql+pymysql://we-rss:123456@119.3.239.67/we-rss",
+                "PORT": "8001",
+                "USERNAME":"admin",
+                "PASSWORD":"admin@123",
+                "DEBUG": "True",
+                // "DINGDING_WEBHOOK":"https://oapi.dingtalk.com/robot/send?access_token="
+                // "DINGDING_WEBHOOK":"https://oapi.dingtalk.com/robot/send?access_token="
+                // "DINGDING_WEBHOOK":"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
+            },
+            "program": "main.py",
+            // "program": "job.py",
+            // "program":"${file}",
+            "args": ["-init", "True","-job","False"]
+            // "args": ["-init", "True","-job","True"]
+        }
+    ]
+}
