@@ -1,7 +1,10 @@
 app_name: we-mp-rss
 cookie: 
 
-#数据库连接 例如db:  mysql+pymysql://<username>:<password>@<host>/we-rss
+#数据库连接 例如db:  mysql+pymysql://<username>:<password>@<host>/we-rss?charset=utf8mb4
+#需要注意数据库连接字符串的格式，如果是sqlite数据库，则使用sqlite:///路径的形式，如果是mysql数据库，
+#则使用mysql+pymysql://<username>:<password>@<host>/<database>?charset=<数据库编码>的形式
+
 db: ${DB:-sqlite:///data/db.db}
 
 #通知
@@ -30,8 +33,11 @@ debug: ${DEBUG:-False}
 #最大页数 第一次添加 采集的页数默认5页
 max_page: ${MAX_PAGE:-5}
 
-#RSS域名地址：如https://www.xxx.com
-rss_base_url: ${RSS_BASE_URL:-""}
+rss:
+  #RSS域名地址：如https://www.xxx.com
+  base_url: ${RSS_BASE_URL:-""}
+  #是否为本地RSS链接，默认True，当为False时直接出外部链接
+  local: ${RSS_LOCAL:-True}
 
 #登录会话有效时长 单位分钟 默认60分钟
 token_expire_minutes: ${TOKEN_EXPIRE_MINUTES:-60}

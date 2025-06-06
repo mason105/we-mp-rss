@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Engine,Text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import Column, Integer, String, DateTime
 from typing import Optional, List
@@ -14,7 +14,12 @@ class Db:
     def __init__(self):
         self._session: Optional[sessionmaker] = None
         self.engine = None
-        
+    def get_engine(self) -> Engine:
+        """Return the SQLAlchemy engine for this database connection."""
+        if self.engine is None:
+            raise ValueError("Database connection has not been initialized.")
+        return self.engine
+    
     def init(self, con_str: str) -> None:
         """Initialize database connection and create tables"""
         try:
@@ -61,6 +66,7 @@ class Db:
                 art.updated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             art.created_at=datetime.strptime(art.created_at ,'%Y-%m-%d %H:%M:%S')
             art.updated_at=datetime.strptime(art.updated_at,'%Y-%m-%d %H:%M:%S')
+            art.content=Text(art.content)
             from core.models.base import DATA_STATUS
             art.status=DATA_STATUS.ACTIVE
             self._session.add(art) 
@@ -68,7 +74,7 @@ class Db:
             self._session.commit()
         except Exception as e:
             self._session.rollback()
-            # print(f"Failed to add article: {e}",e)
+            print(f"Failed to add article: {e}",e)
             return False
         return True    
         
@@ -114,6 +120,14 @@ class Db:
         if not self._session:
             self.init(self.connection_str)
             print_warning("Database reinitialized")
+        else:
+            # 检查会话是否有效
+            try:
+                self._session.execute("SELECT 1")
+            except:
+                self.close()
+                self.init(self.connection_str)
+                print_warning("Database reinitialized due to stale connection")
         return self._session
 
 # 全局数据库实例

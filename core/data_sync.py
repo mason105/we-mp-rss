@@ -1,221 +1,523 @@
-from typing import Dict, List, Optional
-from datetime import datetime
-import logging
-from sqlalchemy import inspect
-from core.db import Db
-from core.models.base import Base
-from core.print import print_info, print_error
-from core.log import logger
+from sqlalchemy import inspect, create_engine, text
+from sqlalchemy.engine import Engine
+from typing import List, Type
+from .models.base import Base
+from .models.article import Article
+from .models.config_management import ConfigManagement
+from .models.feed import Feed
+from .models.message_task import MessageTask
+from .models.user import User
+class ModelSync:
+    """模型字段同步到数据库的工具类"""
+    
+    def _is_utcnow(self, func):
+        """检查是否是datetime.utcnow函数"""
+        return hasattr(func, '__name__') and func.__name__ == 'utcnow'
 
-class DataSync:
-    def __init__(self, source_db: Db, target_db: Db):
-        self.source_db = source_db
-        self.target_db = target_db
-        
-    def sync_model_to_table(self, model_class):
-        """将模型类同步到数据库表结构"""
+    def __init__(self, db_uri: str="sqlite:///db.db",eng:Engine=None):
+        """
+        初始化同步器
+        :param db_uri: 数据库连接URI
+        """
         try:
-            # 检查表是否已存在
-            if not inspect(self.target_db.engine).has_table(model_class.__tablename__):
-                # 表不存在则创建
-                model_class.__table__.create(self.target_db.engine)
-                logger.info(f"Created table {model_class.__tablename__}")
-                return True
-            
-            # 表已存在则比较差异
-            temp_table = type(f"Temp{model_class.__name__}", (Base,), {
-                '__tablename__': f"temp_{model_class.__tablename__}",
-                '__table_args__': {'extend_existing': True}
-            })
-            
-            # 复制列定义和约束
-            for col in model_class.__table__.columns:
-                new_col = col.copy()
-                # 保留主键约束
-                if col.primary_key:
-                    new_col.primary_key = True
-                temp_table.__table__.append_column(new_col)
-                
-            # 复制表级约束
-            temp_table.__table__.constraints.update(model_class.__table__.constraints)
-            
-            # 生成并执行DDL
-            ddl_statements = self.generate_ddl(model_class, temp_table)
-            if ddl_statements:
-                logger.info(f"Updating table {model_class.__tablename__} with {len(ddl_statements)} changes")
-                return self.execute_ddl(ddl_statements)
-            
-            logger.info(f"Table {model_class.__tablename__} is already up to date")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to sync model {model_class.__name__} to table: {e}")
-            # raise e
-            return False
-        
-    def compare_schemas(self, source_table, target_table):
-        """比较两个表的结构差异"""
-        source_columns = {c.name: c.type for c in source_table.__table__.columns}
-        target_columns = {c.name: c.type for c in target_table.__table__.columns}
-        
-        # 找出新增、修改和删除的列
-        added = {k: v for k, v in source_columns.items() if k not in target_columns}
-        changed = {
-            k: (v, target_columns[k])
-            for k, v in source_columns.items()
-            if k in target_columns and v != target_columns[k]
-        }
-        removed = {k: v for k, v in target_columns.items() if k not in source_columns}
-        
-        return {
-            'added_columns': added,
-            'changed_columns': changed,
-            'removed_columns': removed
-        }
-        
-    def generate_ddl(self, source_table, target_table):
-        """根据表结构差异生成DDL语句"""
-        diff = self.compare_schemas(source_table, target_table)
-        ddl_statements = []
-        
-        # 获取数据库方言
-        dialect = self.target_db.engine.dialect.name
-        
-        # 处理新增列
-        for column_name, column_type in diff['added_columns'].items():
-            ddl_statements.append(
-                f"ALTER TABLE {target_table.__tablename__} ADD COLUMN {column_name} {column_type}"
-            )
-        
-        # 处理修改列
-        for column_name, (source_type, target_type) in diff['changed_columns'].items():
-            if dialect == 'sqlite':
-                # SQLite不支持直接修改列类型，需要创建新表并复制数据
-                ddl_statements.extend([
-                    f"ALTER TABLE {target_table.__tablename__} RENAME TO {target_table.__tablename__}_old",
-                    f"CREATE TABLE {target_table.__tablename__} AS SELECT * FROM {target_table.__tablename__}_old",
-                    f"DROP TABLE {target_table.__tablename__}_old"
-                ])
+            if eng is  None:
+                self.engine: Engine = create_engine(db_uri)
             else:
-                # MySQL/PostgreSQL等支持ALTER COLUMN TYPE
-                ddl_statements.append(
-                    f"ALTER TABLE {target_table.__tablename__} ALTER COLUMN {column_name} TYPE {source_type}"
-                )
-        
-        # 处理删除列
-        for column_name in diff['removed_columns'].keys():
+                self.engine: Engine = eng
+            # 测试连接是否有效
+            with self.engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            self.models: List[Type[Base]] = [
+                Article,
+                ConfigManagement,
+                Feed,
+                MessageTask,
+                User
+            ]
+        except Exception as e:
+            import traceback
+            error_detail = f"数据库连接失败: {str(e)}\n{traceback.format_exc()}"
+            raise ValueError(error_detail)
+    
+    def sync_all(self, force_update: bool = False) -> None:
+        """同步所有模型到数据库
+        :param force_update: 是否强制更新字段类型，默认为False
+        """
+        print("[SYNC] 开始同步所有模型到数据库...")
+        for model in self.models:
+            self.sync_model(model, force_update)
+        print("[SYNC] 所有模型同步完成")
+    
+    def sync_model(self, model: Type[Base], force_update: bool = False) -> None:
+        """
+        同步单个模型到数据库，兼容SQLite和MySQL
+        :param model: 模型类
+        :param force_update: 是否强制更新字段类型，默认为False
+        """
+        try:
+            inspector = inspect(self.engine)
+            table_name = model.__tablename__
+            db_type = self.get_database_type()
+            
+            print(f"[SYNC] 开始同步表 {table_name} (数据库类型: {db_type})...")
+            
+            # 检查表是否存在
+            if not inspector.has_table(table_name):
+                print(f"[SYNC] 表 {table_name} 不存在，创建新表")
+                with self.engine.begin() as conn:
+                    # 自定义表创建逻辑以支持主外键约束
+                    table = model.__table__
+                    columns = []
+                    primary_keys = []
+                    foreign_keys = []
+                    
+                    # 处理列定义
+                    for column in table.columns:
+                        db_type = self._get_column_type(column)
+                        nullable = "NULL" if column.nullable else "NOT NULL"
+                        default_value = column.default.arg if column.default is not None else None
+                        
+                        if callable(default_value):
+                            default_value = default_value()
+                        
+                        column_def = f"{column.name} {db_type} {nullable}"
+                        # 设置自动增长属性(仅对主键列)
+                        if getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                            if db_type == 'mysql':
+                                column_def += " AUTO_INCREMENT"
+                            elif db_type == 'sqlite':
+                                column_def += " AUTOINCREMENT"
+                            elif db_type == 'postgresql':
+                                # PostgreSQL使用SERIAL会自动创建序列
+                                column_def += " SERIAL"
+                            print(f"[DEBUG] 为主键列 {column.name} 设置自动增长")
+            
+                        if default_value is not None:
+                            column_def += f" DEFAULT '{default_value}'" if isinstance(default_value, str) else f" DEFAULT {default_value}"
+                        elif column.nullable:
+                            column_def += " DEFAULT NULL"
+                        
+                        columns.append(column_def)
+                        
+                        # 收集主键
+                        if column.primary_key:
+                            primary_keys.append(column.name)
+                            
+                        # 收集外键
+                        if hasattr(column, 'foreign_keys') and column.foreign_keys:
+                            for fk in column.foreign_keys:
+                                ref_table = fk.column.table.name
+                                ref_column = fk.column.name
+                                foreign_keys.append(
+                                    f"FOREIGN KEY ({column.name}) REFERENCES {ref_table}({ref_column})"
+                                )
+                    
+                    # 构建CREATE TABLE语句
+                    create_sql = f"CREATE TABLE {table_name} ("
+                    create_sql += ", ".join(columns)
+                    
+                    # 添加主键约束
+                    if primary_keys:
+                        create_sql += f", PRIMARY KEY ({', '.join(primary_keys)})"
+                    
+                    # 添加外键约束
+                    if foreign_keys:
+                        create_sql += ", " + ", ".join(foreign_keys)
+                    
+                    create_sql += ")"
+                    print(f"[DEBUG] 执行CREATE TABLE语句: {create_sql}")
+                    conn.execute(text(create_sql))
+                    
+                print(f"[SYNC] 表 {table_name} 创建成功，包含 {len(primary_keys)} 个主键和 {len(foreign_keys)} 个外键")
+                return
+            
+            # 获取数据库表列和模型列
+            db_columns = {c['name']: c for c in inspector.get_columns(table_name)}
+            model_columns = {c.name: c for c in model.__table__.columns}
+            
+            # 找出需要添加或修改的列
+            for col_name, model_col in model_columns.items():
+                if col_name not in db_columns:
+                    # 添加新列
+                    print(f"[SYNC] 检测到新列 {col_name}({model_col.type})")
+                    self._add_column(table_name, model_col)
+                    print(f"[SYNC] 表 {table_name} 添加列 {col_name} 成功")
+                else:
+                    # 检查类型是否一致
+                    db_col = db_columns[col_name]
+                    db_type_str = str(db_col['type'])
+                    model_type_str = str(model_col.type)
+                    
+                    # 检查类型和默认值是否一致
+                    if force_update or not self._is_same_type(db_col, model_col):
+                        db_default = db_col.get('default')
+                        model_default = model_col.default.arg if model_col.default is not None else None
+                        if callable(model_default):
+                            # 跳过需要上下文的默认值函数
+                            if self._is_utcnow(model_default):
+                                model_default = None
+                            else:
+                                model_default = model_default()
+                    
+                        # 记录差异详情
+                        if db_default != model_default:
+                            print(f"[SYNC] 检测到列 {col_name} 默认值差异: 数据库({db_default}) vs 模型({model_default})")
+                        if db_col.get('primary_key', False) != model_col.primary_key:
+                            print(f"[SYNC] 检测到列 {col_name} 主键差异: 数据库({db_col.get('primary_key', False)}) vs 模型({model_col.primary_key})")
+                        if ('foreign_keys' in db_col) != (hasattr(model_col, 'foreign_keys') and len(model_col.foreign_keys) > 0):
+                            print(f"[SYNC] 检测到列 {col_name} 外键标记差异")
+                    
+                        print(f"[SYNC] 检测到列 {col_name} 类型差异: 数据库({db_type_str}) vs 模型({model_type_str})")
+                        self._alter_column(table_name, model_col)
+                        print(f"[SYNC] 表 {table_name} 更新列 {col_name} 成功")
+                    else:
+                        print(f"[SYNC] 表 {table_name} 列 {col_name} 类型、默认值和约束一致({db_type_str})")
+            
+            print(f"[SYNC] 表 {table_name} 同步完成")
+        except Exception as e:
+            print(f"[ERROR] 同步表 {table_name} 失败: {str(e)}")
+            raise
+    
+    def get_database_type(self) -> str:
+        """获取数据库类型，支持多种常见数据库"""
+        try:
+            dialect = self.engine.dialect.name
+            print(f"[DEBUG] 检测到数据库方言: {dialect}")
+            
+            # 支持更多数据库类型
             if dialect == 'sqlite':
-                # SQLite不支持直接删除列，需要创建新表并复制数据
-                ddl_statements.extend([
-                    f"ALTER TABLE {target_table.__tablename__} RENAME TO {target_table.__tablename__}_old",
-                    f"CREATE TABLE {target_table.__tablename__} AS SELECT * FROM {target_table.__tablename__}_old WHERE 1=0",
-                    f"INSERT INTO {target_table.__tablename__} SELECT * FROM {target_table.__tablename__}_old",
-                    f"DROP TABLE {target_table.__tablename__}_old"
-                ])
+                return 'sqlite'
+            elif dialect in ('mysql', 'mariadb'):
+                return 'mysql'
+            elif dialect == 'postgresql':
+                return 'postgresql'
+            elif dialect == 'oracle':
+                return 'oracle'
+            elif dialect == 'mssql':
+                return 'mssql'
             else:
-                ddl_statements.append(
-                    f"ALTER TABLE {target_table.__tablename__} DROP COLUMN {column_name}"
-                )
-        
-        return ddl_statements
-        
-    def execute_ddl(self, ddl_statements):
-        """执行DDL语句"""
-        try:
-            for stmt in ddl_statements:
-                self.target_db.engine.execute(stmt)
-            return True
+                print(f"[WARN] 未知数据库方言: {dialect}, 默认使用mysql兼容模式")
+                return 'mysql'
         except Exception as e:
-            logger.error(f"DDL execution failed: {e}")
-            return False
+            print(f"[ERROR] 获取数据库类型失败: {str(e)}")
+            return 'mysql'  # 默认回退
+    
+    def _add_column(self, table_name: str, column) -> None:
+        """添加新列到表，支持默认值和外键约束设置，兼容SQLite和MySQL"""
+        db_type = self.get_database_type()
+        column_type = self._get_column_type(column)
+        nullable = "NULL" if column.nullable else "NOT NULL"
+        default_value = column.default.arg if column.default is not None else None
         
-    def map_schema(self, source_schema: Dict, target_schema: Dict) -> Dict:
-        """定义源和目标数据结构的映射关系"""
-        return {
-            source_field: target_field
-            for source_field, target_field in zip(source_schema.keys(), target_schema.keys())
-        }
+        # 处理函数默认值
+        if callable(default_value):
+            # 跳过需要上下文的默认值函数
+            if self._is_utcnow(default_value):
+                default_value = None
+            else:
+                default_value = default_value()
         
-    def transform_data(self, source_data: Dict, mapping: Dict) -> Dict:
-        """根据映射关系转换数据"""
-        return {
-            target_field: source_data[source_field]
-            for source_field, target_field in mapping.items()
-        }
-        
-    def validate_data(self, data: Dict, schema: Dict) -> bool:
-        """验证数据是否符合目标结构"""
-        return all(field in data for field in schema.keys())
-        
-    def full_sync(self, source_table: str, target_table: str, batch_size: int = 100) -> bool:
-        """全量数据同步"""
-        try:
-            offset = 0
-            total_processed = 0
-            logger.info(f"Starting full sync from {source_table.__tablename__} to {target_table.__tablename__}")
-            
-            while True:
-                source_data = self.source_db.session.query(source_table).limit(batch_size).offset(offset).all()
-                if not source_data:
-                    break
-                batch_count = 0
-                for data in source_data:
-                    try:
-                        transformed = self.transform_data(data.__dict__, self.map_schema(
-                            source_table.__table__.columns,
-                            target_table.__table__.columns
-                        ))
-                        
-                        if self.validate_data(transformed, target_table.__table__.columns):
-                            self.target_db.session.add(target_table(**transformed))
-                            batch_count += 1
-                            total_processed += 1
-                            
-                        if batch_count % 10 == 0:  # 每10条记录打印一次进度
-                            logger.info(f"Processed {total_processed} records")
-                            
-                    except Exception as e:
-                        logger.error(f"Error processing record {data.id}: {e}")
-                        continue
-                    
-                    if self.validate_data(transformed, target_table.__table__.columns):
-                        self.db.session.add(target_table(**transformed))
-                        
-                offset += batch_size
-                try:
-                    self.target_db.session.commit()
-                    logger.info(f"Successfully committed batch {offset//batch_size}")
-                except Exception as e:
-                    logger.error(f"Batch commit failed: {e}")
-                    self.target_db.session.rollback()
-                    
-            logger.info(f"Full sync completed. Total records processed: {total_processed}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Full sync failed: {e}")
-            self.target_db.session.rollback()
-            return False
-            
-    def incremental_sync(self, source_table: str, target_table: str, since: datetime) -> bool:
-        """增量数据同步"""
-        try:
-            source_data = self.source_db.session.query(source_table).filter(
-                source_table.updated_at >= since
-            ).all()
-            
-            for data in source_data:
-                transformed = self.transform_data(data.__dict__, self.map_schema(
-                    source_table.__table__.columns,
-                    target_table.__table__.columns
-                ))
+        with self.engine.begin() as conn:
+            try:
+                # 构建ADD COLUMN语句
+                add_sql = f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type} {nullable}"
                 
-                if self.validate_data(transformed, target_table.__table__.columns):
-                    self.target_db.session.merge(target_table(**transformed))
+                # 添加自动增长属性(仅对主键列)
+                if getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                    if db_type == 'mysql':
+                        add_sql += " AUTO_INCREMENT"
+                    elif db_type == 'sqlite':
+                        add_sql += " AUTOINCREMENT"
+                    elif db_type == 'postgresql':
+                        add_sql += " SERIAL"
+                    print(f"[DEBUG] 为主键列 {column.name} 添加自动增长属性")
+                
+                # 添加默认值设置
+                if default_value is not None:
+                    # 根据类型处理默认值格式
+                    if isinstance(default_value, str) and not isinstance(column.type, (String, Text)):
+                        add_sql += f" DEFAULT {default_value}"
+                    else:
+                        add_sql += f" DEFAULT '{default_value}'" if isinstance(default_value, str) else f" DEFAULT {default_value}"
+                elif column.nullable:
+                    add_sql += " DEFAULT NULL"
+                
+                print(f"[DEBUG] 执行ADD COLUMN语句: {add_sql}")
+                conn.execute(text(add_sql))
+                
+                # 处理外键约束
+                if hasattr(column, 'foreign_keys') and column.foreign_keys and db_type != 'sqlite':
+                    for fk in column.foreign_keys:
+                        ref_table = fk.column.table.name
+                        ref_column = fk.column.name
+                        fk_sql = (
+                            f"ALTER TABLE {table_name} ADD CONSTRAINT fk_{table_name}_{column.name} " +
+                            f"FOREIGN KEY ({column.name}) REFERENCES {ref_table}({ref_column})"
+                        )
+                        print(f"[DEBUG] 执行外键约束语句: {fk_sql}")
+                        conn.execute(text(fk_sql))
+            except Exception as e:
+                print(f"[WARN] 添加列 {column.name} 失败: {str(e)}")
+                raise
+    
+    def _alter_column_sqlite(self, table_name: str, column) -> None:
+        """SQLite专用: 通过创建新表并复制数据来修改列，支持默认值"""
+        try:
+            print(f"[INFO] 开始修改SQLite表 {table_name} 的列 {column.name}")
+            
+            with self.engine.begin() as conn:
+                # 1. 获取原表结构
+                inspector = inspect(self.engine)
+                columns = inspector.get_columns(table_name)
+                
+                # 2. 创建临时表
+                temp_table = f"{table_name}_temp"
+                conn.execute(text(f"DROP TABLE IF EXISTS {temp_table}"))
+                
+                # 创建带新结构的临时表，包含默认值
+                column_defs = []
+                for col in columns:
+                    if col['name'] == column.name:
+                        # 处理修改的列
+                        col_type = str(column.type)
+                        default_value = column.default.arg if column.default is not None else None
+                        if callable(default_value):
+                            # 跳过需要上下文的默认值函数
+                            if self._is_utcnow(default_value):
+                                default_value = None
+                            else:
+                                default_value = default_value()
+                        
+                        col_def = f"{col['name']} {col_type}"
+                        if default_value is not None:
+                            col_def += f" DEFAULT '{default_value}'" if isinstance(default_value, str) else f" DEFAULT {default_value}"
+                        elif column.nullable:
+                            col_def += " DEFAULT NULL"
+                    else:
+                        # 保持其他列不变
+                        col_def = f"{col['name']} {col['type']}"
                     
-            self.target_db.session.commit()
+                    column_defs.append(col_def)
+                
+                create_sql = f"CREATE TABLE {temp_table} ({', '.join(column_defs)})"
+                print(f"[DEBUG] SQLite创建表语句: {create_sql}")
+                conn.execute(text(create_sql))
+                
+                # 3. 复制数据
+                conn.execute(text(f"INSERT INTO {temp_table} SELECT * FROM {table_name}"))
+                
+                # 4. 删除原表并重命名临时表
+                conn.execute(text(f"DROP TABLE {table_name}"))
+                conn.execute(text(f"ALTER TABLE {temp_table} RENAME TO {table_name}"))
+                
+                print(f"[INFO] 成功修改SQLite表 {table_name} 的列 {column.name}")
+        except Exception as e:
+            print(f"[ERROR] 修改SQLite列 {column.name} 失败: {str(e)}")
+            raise
+    
+    def _alter_column(self, table_name: str, column) -> None:
+        """修改表列，支持默认值设置，兼容SQLite和MySQL"""
+        db_type = self.get_database_type()
+        column_type = self._get_column_type(column)
+        nullable = "NULL" if column.nullable else "NOT NULL"
+        default_value = column.default.arg if column.default is not None else None
+        
+        # 处理函数默认值
+        if callable(default_value):
+            default_value = default_value()
+        
+        with self.engine.begin() as conn:
+            try:
+                if db_type == 'sqlite':
+                    # SQLite需要特殊处理
+                    self._alter_column_sqlite(table_name, column)
+                else:
+                    # MySQL标准语法
+                    # 构建ALTER语句
+                    alter_sqls = []
+                    
+                    # 1. 修改列定义
+                    modify_sql = f"ALTER TABLE {table_name} MODIFY COLUMN {column.name} {column_type} {nullable}"
+                    
+                    # 添加自动增长属性(仅对主键列)
+                    if getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                        if db_type == 'mysql':
+                            modify_sql += " AUTO_INCREMENT"
+                        elif db_type == 'sqlite':
+                            modify_sql += " AUTOINCREMENT"
+                        elif db_type == 'postgresql':
+                            modify_sql += " SERIAL"
+                        print(f"[DEBUG] 修改主键列 {column.name} 的自动增长属性")
+                    
+                    # 添加默认值设置
+                    if default_value is not None:
+                        # 根据类型处理默认值格式
+                        if isinstance(default_value, str) and not isinstance(column.type, (String, Text)):
+                            modify_sql += f" DEFAULT {default_value}"
+                        else:
+                            modify_sql += f" DEFAULT '{default_value}'" if isinstance(default_value, str) else f" DEFAULT {default_value}"
+                    elif column.nullable:
+                        modify_sql += " DEFAULT NULL"
+                    
+                    alter_sqls.append(modify_sql)
+                    
+                    # 2. 处理外键约束
+                    if hasattr(column, 'foreign_keys') and column.foreign_keys:
+                        # 先删除现有外键约束
+                        inspector = inspect(self.engine)
+                        for fk in inspector.get_foreign_keys(table_name):
+                            if fk['constrained_columns'] == [column.name]:
+                                alter_sqls.append(
+                                    f"ALTER TABLE {table_name} DROP FOREIGN KEY {fk['name']}"
+                                )
+                        
+                        # 添加新的外键约束
+                        for fk in column.foreign_keys:
+                            ref_table = fk.column.table.name
+                            ref_column = fk.column.name
+                            alter_sqls.append(
+                                f"ALTER TABLE {table_name} ADD CONSTRAINT fk_{table_name}_{column.name} " +
+                                f"FOREIGN KEY ({column.name}) REFERENCES {ref_table}({ref_column})"
+                            )
+                    
+                    # 执行所有ALTER语句
+                    for sql in alter_sqls:
+                        print(f"[DEBUG] 执行ALTER语句: {sql}")
+                        conn.execute(text(sql))
+            except Exception as e:
+                print(f"[WARN] 修改列 {column.name} 失败: {str(e)}")
+                raise
+    
+    def _is_same_type(self, db_col, model_col) -> bool:
+        """检查数据库列类型、默认值和约束是否与模型列一致"""
+        try:
+            db_type = str(db_col['type']).upper()
+            model_type = str(model_col.type).upper()
+            db_kind = self.get_database_type()
+            
+            # 去除长度信息(如VARCHAR(255) -> VARCHAR)
+            db_base_type = db_type.split('(')[0]
+            model_base_type = model_type.split('(')[0]
+            
+            # 类型映射表
+            type_mapping = {
+                'sqlite': {
+                    'INTEGER': ['INT', 'INTEGER', 'BIGINT', 'SMALLINT'],
+                    'TEXT': ['TEXT', 'VARCHAR', 'CHAR', 'STRING', 'NVARCHAR'],
+                    'REAL': ['REAL', 'FLOAT', 'DOUBLE', 'DECIMAL'],
+                    'BLOB': ['BLOB', 'BINARY', 'VARBINARY'],
+                    'NUMERIC': ['NUMERIC', 'DECIMAL']
+                },
+                'mysql': {
+                    'INT': ['INT', 'INTEGER'],
+                    'BIGINT': ['BIGINT'],
+                    'VARCHAR': ['VARCHAR', 'CHAR', 'NVARCHAR'],
+                    'TEXT': ['TEXT', 'LONGTEXT', 'MEDIUMTEXT', 'TINYTEXT'],
+                    'DATETIME': ['DATETIME', 'TIMESTAMP'],
+                    'FLOAT': ['FLOAT', 'REAL'],
+                    'DOUBLE': ['DOUBLE', 'DOUBLE PRECISION'],
+                    'DECIMAL': ['DECIMAL', 'NUMERIC']
+                }
+            }
+            
+            # 1. 检查类型是否匹配
+            type_match = False
+            if db_kind == 'sqlite':
+                # SQLite类型系统比较灵活，检查是否属于同一类型组
+                for group, types in type_mapping['sqlite'].items():
+                    if db_base_type in types and model_base_type in types:
+                        print(f"[DEBUG] 类型匹配: {db_type} 和 {model_type} 都属于 {group} 组")
+                        type_match = True
+                        break
+                if not type_match:
+                    print(f"[DEBUG] 类型不匹配: {db_type} 和 {model_type} 不属于同一组")
+                    return False
+            else:
+                # MySQL需要更精确的类型匹配
+                # 忽略长度差异
+                if db_base_type != model_base_type:
+                    print(f"[DEBUG] 基础类型不匹配: {db_base_type} != {model_base_type}")
+                    return False
+                
+                # 检查长度是否一致(如果有)
+                db_length = db_type.split('(')[1].split(')')[0] if '(' in db_type else None
+                model_length = model_type.split('(')[1].split(')')[0] if '(' in model_type else None
+                
+                if db_length and model_length and db_length != model_length:
+                    print(f"[DEBUG] 类型长度不匹配: {db_length} != {model_length}")
+                    return False
+            
+            # 2. 检查默认值是否匹配
+            db_default = db_col.get('default')
+            model_default = model_col.default.arg if model_col.default is not None else None
+            
+            # 处理函数默认值
+            if callable(model_default):
+                model_default = model_default()
+            
+            # 比较默认值
+            if db_default != model_default:
+                print(f"[DEBUG] 默认值不匹配: 数据库({db_default}) != 模型({model_default})")
+                return False
+            
+            # 3. 检查主键约束是否匹配
+            db_primary = db_col.get('primary_key', False)
+            model_primary = model_col.primary_key
+            if db_primary != model_primary:
+                print(f"[DEBUG] 主键约束不匹配: 数据库({db_primary}) != 模型({model_primary})")
+                return False
+                
+            # 4. 检查外键约束是否匹配
+            # 注意: 外键约束通常在表级别定义，这里只检查列是否标记为外键
+            db_foreign = 'foreign_keys' in db_col
+            model_foreign = hasattr(model_col, 'foreign_keys') and len(model_col.foreign_keys) > 0
+            if db_foreign != model_foreign:
+                print(f"[DEBUG] 外键标记不匹配: 数据库({db_foreign}) != 模型({model_foreign})")
+                return False
+                
+            # 5. 检查自动增长属性是否匹配
+            db_autoinc = db_col.get('autoincrement', False)
+            model_autoinc = getattr(model_col, 'autoincrement', False)
+            # 只有当列是主键时才比较自动增长属性
+            if db_col.get('primary_key', False) or getattr(model_col, 'primary_key', False):
+                if db_autoinc != model_autoinc:
+                    print(f"[DEBUG] 自动增长属性不匹配: 数据库({db_autoinc}) != 模型({model_autoinc})")
+                    return False
+                
             return True
         except Exception as e:
-            logger.error(f"Incremental sync failed: {e}")
-            self.target_db.session.rollback()
+            print(f"[ERROR] 类型/默认值/约束比较失败: {str(e)}")
             return False
+    
+    def _get_column_type(self, column) -> str:
+        """获取SQL列类型字符串，处理数据库差异"""
+        db_type = self.get_database_type()
+        type_str = str(column.type)
+        
+        # 调试日志
+        print(f"[DEBUG] 获取列类型: {column.name} - 原始类型: {type_str}")
+        if hasattr(column, 'autoincrement'):
+            print(f"[DEBUG] 自动增长属性: {column.autoincrement}")
+        if hasattr(column, 'primary_key'):
+            print(f"[DEBUG] 主键属性: {column.primary_key}")
+        
+        # 处理常见的类型差异
+        if db_type == 'sqlite':
+            # SQLite类型处理
+            if 'VARCHAR' in type_str:
+                return 'TEXT'
+            elif 'DATETIME' in type_str:
+                return 'TEXT'  # SQLite没有专门的DATETIME类型
+        else:
+            # MySQL类型处理
+            if 'TEXT' in type_str and 'VARCHAR' not in type_str:
+                return type_str.replace('TEXT', 'LONGTEXT')
+                
+        return type_str
+
+    # 使用示例
+if __name__ == "__main__":
+    # 替换为你的数据库连接URI
+    db_uri = "sqlite:///data/db.db"
+    sync = ModelSync(db_uri)
+    sync.sync_all()

@@ -68,7 +68,7 @@ async def get_rss_feeds(
     try:
         total = session.query(Feed).count()
         feeds = session.query(Feed).order_by(Feed.created_at.desc()).limit(limit).offset(offset).all()
-        rss_domain=cfg.get("rss_base_url",request.base_url)
+        rss_domain=cfg.get("rss.base_url",request.base_url)
         # 转换为RSS格式数据
         rss_list = [{
             "id": str(feed.id),
@@ -197,13 +197,13 @@ async def get_mp_articles_rss(
         total = session.query(Article).filter(Article.mp_id == feed_id).count()
         articles = session.query(Article).filter(Article.mp_id == feed_id)\
             .order_by(Article.publish_time.desc()).limit(limit).offset(offset).all()
-        rss_domain=cfg.get("rss_base_url",request.base_url)
+        rss_domain=cfg.get("rss.base_url",request.base_url)
         # 转换为RSS格式数据
         import datetime
         rss_list = [{
             "id": str(article.id),
             "title": article.title,
-            "link":  f"{rss_domain}rss/feed/{article.id}",
+            "link":  f"{rss_domain}rss/feed/{article.id}" if cfg.get("rss.local",True) else article.url,
             "description": article.description ,
             # "updated": article.updated_at.isoformat()
             "updated": datetime.datetime.fromtimestamp(article.publish_time)

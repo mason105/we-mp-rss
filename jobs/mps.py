@@ -49,13 +49,15 @@ def do_job(mps:list[Feed]=None,task:MessageTask=None):
                 count=wx.all_count()
                 all_count+=count
                 print_success(f"任务[{item.mp_name}]执行成功,{count}成功条数")
-                web_hook(data=item,task=task,count=count)
+                from jobs.webhook import MessageWebHook
+                tms=MessageWebHook(task=task,feed=item,articles=wx.articles)
+                web_hook(tms)
         print_success(f"所有公众号更新完成,共更新{all_count}条数据")
 
 
-def add_job(args):
+def add_job(feeds:list[Feed]=None,task:MessageTask=None):
     from core.queue import TaskQueue
-    TaskQueue.add_task(do_job,args)
+    TaskQueue.add_task(do_job,feeds,task)
     print_success(TaskQueue.get_queue_info())
     pass
 import json
@@ -78,7 +80,7 @@ def start_job():
         if DEBUG:
             cron_exp="*/1 * * * *"
             cron_exp="* * * * * *"
-        job_id=scheduler.add_cron_job(add_job,cron_expr=cron_exp,args=[get_feeds(task)])
+        job_id=scheduler.add_cron_job(add_job,cron_expr=cron_exp,args=[get_feeds(task),task])
         print(f"已添加任务: {job_id}")
     scheduler.start()
     print("启动任务")

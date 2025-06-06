@@ -119,6 +119,6 @@ class MpsWeb(WxGather):
                 print(f"Request error: {e}")
                 break
             finally:
-                super().Item_Over(item=item,CallBack=Item_Over_CallBack)
+                super().Item_Over(item={Mps_id:Mps_id,Mps_title:Mps_title},CallBack=Item_Over_CallBack)
         super().Over(CallBack=Over_CallBack)
         pass
