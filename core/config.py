@@ -56,7 +56,7 @@ class Config:
         self.save_config()
     def __fix(self,v:str):
         if v in ("", "''", '""', None):
-            return None
+            return ""
         try:
             # 尝试转换为布尔值
             if v.lower() in ('true', 'false'):
@@ -79,7 +79,11 @@ class Config:
         try:
             for k in keys:
                 value = value[k]
-            return self.__fix(value)
+            val=self.__fix(value)
+            if val is None and default is not None:
+                return default
+            else:
+                return val
         except (KeyError, TypeError):
             print("Key {} not found in configuration".format(key))
             if default is not None:
