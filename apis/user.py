@@ -5,7 +5,7 @@ from core.db import DB
 from core.models import User as DBUser
 from core.auth import pwd_context
 import os
-
+from .base import success_response, error_response
 router = APIRouter(prefix="/user", tags=["用户管理"])
 
 @router.get("", summary="获取用户信息")
@@ -16,7 +16,6 @@ async def get_user_info(current_user: dict = Depends(get_current_user)):
             DBUser.username == current_user["username"]
         ).first()
         if not user:
-            from .base import error_response
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=error_response(
@@ -24,7 +23,6 @@ async def get_user_info(current_user: dict = Depends(get_current_user)):
                     message="用户不存在"
                 )
             )
-        from .base import success_response
         return success_response({
             "username": user.username,
             "nickname": user.nickname if user.nickname else user.username,
@@ -33,8 +31,16 @@ async def get_user_info(current_user: dict = Depends(get_current_user)):
             "role": user.role,
             "is_active": user.is_active,
         })
-    finally:
-        session.close()
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_201_CREATED,
+            detail=error_response(
+                code=50001,
+                message="获取用户信息失败"
+            )
+        )
 
 @router.put("", summary="修改用户资料")
 async def update_user_info(
@@ -73,23 +79,16 @@ async def update_user_info(
         
         user.updated_at = datetime.now()
         session.commit()
-        
-        from .base import success_response
         return success_response(message="更新成功")
-    except HTTPException:
-        raise
+    except HTTPException as e:
+        raise e
     except Exception as e:
         session.rollback()
-        from .base import error_response
         raise HTTPException(
-            status_code=status.HTTP_200_OK,
-            detail=error_response(
-                code=50001,
-                message=f"更新用户信息失败: {str(e)}"
-            )
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail=f"更新失败: {str(e)}"
         )
-    finally:
-        session.close()
+   
 
 @router.put("/password", summary="修改密码")
 async def change_password(
@@ -163,8 +162,6 @@ async def change_password(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
             detail=f"密码修改失败: {str(e)}"
         )
-    finally:
-        session.close()
 import typing
 @router.post("/avatar", summary="上传用户头像")
 async def upload_avatar(
@@ -192,9 +189,12 @@ async def upload_avatar(
             if user:
                 user.avatar = f"/{avatar_path}/{current_user['username']}.jpg"
                 session.commit()
-        
-        finally:
-            session.close()
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                detail=f"更新用户头像失败: {str(e)}"
+            )
 
         from .base import success_response
         return success_response(data={"avatar": f"/{avatar_path}/{current_user['username']}.jpg"})

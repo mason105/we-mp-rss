@@ -28,10 +28,17 @@ class DataSync:
                 '__table_args__': {'extend_existing': True}
             })
             
-            # 复制列定义
+            # 复制列定义和约束
             for col in model_class.__table__.columns:
-                temp_table.__table__.append_column(col.copy())
+                new_col = col.copy()
+                # 保留主键约束
+                if col.primary_key:
+                    new_col.primary_key = True
+                temp_table.__table__.append_column(new_col)
                 
+            # 复制表级约束
+            temp_table.__table__.constraints.update(model_class.__table__.constraints)
+            
             # 生成并执行DDL
             ddl_statements = self.generate_ddl(model_class, temp_table)
             if ddl_statements:

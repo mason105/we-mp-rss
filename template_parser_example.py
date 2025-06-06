@@ -43,8 +43,6 @@ try:
             } for article in articles
         ]
     }
-finally:
-    session.close()
 
 parser4 = TemplateParser(feed_template)
 result4 = parser4.render({})

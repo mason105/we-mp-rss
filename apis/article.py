@@ -4,6 +4,7 @@ from core.db import DB
 from core.models.base import DATA_STATUS
 from core.models.article import Article
 from sqlalchemy import and_, or_
+from .base import success_response, error_response
 router = APIRouter(prefix=f"/articles", tags=["文章管理"])
 @router.api_route("", summary="获取文章列表",methods= ["GET", "POST"], operation_id="get_articles_list")
 async def get_articles(
@@ -66,8 +67,16 @@ async def get_articles(
             "list": article_list,
             "total": total
         })
-    finally:
-        session.close()
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail=error_response(
+                code=50001,
+                message=f"获取文章列表失败: {str(e)}"
+            )
+        )
 
 @router.get("/{article_id}", summary="获取文章详情")
 async def get_article_detail(
@@ -87,10 +96,17 @@ async def get_article_detail(
                     message="文章不存在"
                 )
             )
-        from .base import success_response
         return success_response(article)
-    finally:
-        session.close()
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail=error_response(
+                code=50001,
+                message=f"获取文章详情失败: {str(e)}"
+            )
+        )   
 
 @router.delete("/{article_id}", summary="删除文章")
 async def delete_article(
@@ -100,7 +116,6 @@ async def delete_article(
     session = DB.get_session()
     try:
         from core.models.article import Article
-        from .base import error_response
         
         # 检查文章是否存在
         article = session.query(Article).filter(Article.id == article_id).first()
@@ -116,7 +131,6 @@ async def delete_article(
         article.status = DATA_STATUS.DELETED
         session.commit()
         
-        from .base import success_response
         return success_response(None, message="文章已标记为删除")
     except Exception as e:
         session.rollback()
@@ -127,5 +141,3 @@ async def delete_article(
                 message=f"删除文章失败: {str(e)}"
             )
         )
-    finally:
-        session.close()

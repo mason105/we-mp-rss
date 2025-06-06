@@ -94,8 +94,6 @@ async def get_rss_feeds(
                 message="获取RSS订阅列表失败"
             )
         )
-    finally:
-        session.close()
 
 @router.get("/feed/{content_id}", summary="获取缓存的文章内容")
 async def get_rss_feed(content_id: str):

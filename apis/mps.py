@@ -37,8 +37,6 @@ async def search_mp(
                 message=f"搜索公众号失败,请重新扫码授权！{str(e)}",
             )
         )
-    finally:
-        session.close()
 
 @router.get("", summary="获取公众号列表")
 async def get_mps(
@@ -80,8 +78,6 @@ async def get_mps(
                 message="获取公众号列表失败"
             )
         )
-    finally:
-        session.close()
 
 @router.get("/update/{mp_id}", summary="更新公众号文章")
 async def update_mps(
@@ -109,7 +105,7 @@ async def update_mps(
 
         from core.wx import WxGather
         wx=WxGather().Model()
-        wx.get_Articles(mp.faker_id,Mps_id=mp.id,CallBack=UpdateArticle)
+        wx.get_Articles(mp.faker_id,Mps_id=mp.id,Mps_title=mp.mp_name,CallBack=UpdateArticle)
         result=wx.articles
 
         return success_response({
@@ -127,10 +123,6 @@ async def update_mps(
                 message=f"更新公众号文章{str(e)}"
             )
         )
-        raise e
-    finally:
-        session.close()
-    pass
 
 @router.get("/{mp_id}", summary="获取公众号详情")
 async def get_mp(
@@ -159,8 +151,6 @@ async def get_mp(
                 message="获取公众号详情失败"
             )
         )
-    finally:
-        session.close()
 
 @router.post("", summary="添加公众号")
 
@@ -236,8 +226,6 @@ async def add_mp(
                 message="添加公众号失败"
             )
         )
-    finally:
-        session.close()
 
 
 @router.delete("/{mp_id}", summary="删除订阅号")
@@ -274,5 +262,3 @@ async def delete_mp(
                 message="删除订阅号失败"
             )
         )
-    finally:
-        session.close()

@@ -179,7 +179,7 @@ class WxGather:
                 else:
                     print_error(f"未找到ID为{mp_id}的公众号记录")
             finally:
-                session.close()
+                pass
                 
         except Exception as e:
             print_error(f"更新公众号状态失败: {e}")
