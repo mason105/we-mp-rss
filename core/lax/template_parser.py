@@ -35,7 +35,13 @@ class TemplateParser:
         Returns:
             The rendered template as a string
         """
+        # print("\n===== RENDER DEBUG START =====")
+        # print(f"Template length: {len(self.template)} chars")
+        # print(f"Context keys: {list(context.keys())}")
+        # print(f"Context values: { {k: type(v) for k, v in context.items()} }")
+        
         if self.compiled is None:
+            print("Compiling template...")
             self.compile_template()
             
         output = []
@@ -47,10 +53,28 @@ class TemplateParser:
                 i += 1
                 continue
                 
-            # Handle variables {{ var }} and nested {{ var.attr }}
+            # Handle variables {{ var }} and nested {{ var.attr }} and eval expressions
             if part.startswith('{{') and part.endswith('}}'):
+                # print(f"\nProcessing variable part: {part}")
                 var_expr = part[2:-2].strip()
-                if '.' in var_expr:
+                # print(f"Extracted expression: {var_expr}")
+                
+                # Check if this is an eval expression (starts with =)
+                if var_expr.startswith('='):
+                    try:
+                        # Evaluate the expression (after =)
+                        expr = var_expr[1:]
+                        print(f"DEBUG - Evaluating expression: {expr}")
+                        print(f"DEBUG - Available variables: {list(context.keys())}")
+                        result = eval(expr, {}, context)
+                        print(f"DEBUG - Expression result: {result} (type: {type(result)})")
+                        output.append(str(result))
+                    except Exception as e:
+                        print(f"ERROR evaluating expression '{var_expr}': {str(e)}")
+                        print(f"DEBUG - Context at error: {context}")
+                        output.append(f'[Error: {str(e)}]')
+                elif '.' in var_expr:
+                    # print(f"DEBUG - Processing nested variable: {var_expr}")  # Debug
                     # Handle nested attribute access
                     parts = var_expr.split('.')
                     current = context.get(parts[0], {})

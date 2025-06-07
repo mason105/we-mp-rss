@@ -12,15 +12,15 @@ def notice( webhook_url, title, text,notice_type: str=None):
     - title: 消息标题
     - text: 消息内容
     """
+    if  len(str(webhook_url)) == 0:
+        print('未提供webhook_url')
+        return
     if 'qyapi.weixin.qq.com' in webhook_url:
         notice_type = 'wechat'
     elif 'oapi.dingtalk.com' in webhook_url:
         notice_type = 'dingtalk'
     elif 'open.feishu.cn' in webhook_url:
         notice_type = 'feishu'
-    else:
-        print('无法根据 webhook_url 识别通知类型')
-        return
     
     if notice_type == 'wechat':
         send_wechat_message(webhook_url, title, text)
