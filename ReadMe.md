@@ -120,7 +120,23 @@ API服务启动后，访问以下地址查看文档：
 | ------------------------ | ---------------------------------------------------------------------------- | --------------------------- |
 | `DB`                     | **必填** 数据库地址 例如: mysql+pymysql://<用户名>:<密码>@<数据库IP>/<数据库名>  | sqlite:///db.db             |
 | `INTERVAL`               | 抓取间隔时间，单位秒                                                           | `300`                       |          
-| `SECRET_KEY`             | JWT授权加密KEY                                                                | -                           |
+| `SECRET_KEY`             | JWT授权加密KEY                                                                | 'we-mp-rss'                 |
+| `DINGDING_WEBHOOK`       | 钉钉机器人Webhook地址                                                          | -                           |
+| `WECHAT_WEBHOOK`         | 微信机器人Webhook地址                                                          | -                           |
+| `FEISHU_WEBHOOK`         | 飞书机器人Webhook地址                                                          | -                           |
+| `MODEL`                  | 采集方式：web 或 api                                                          | web                         |
+| `PORT`                   | API服务端口                                                                   | 8001                        |
+| `DEBUG`                  | 调试模式                                                                      | False                       |
+| `MAX_PAGE`               | 第一次添加时采集的最大页数                                                      | 5                           |
+| `RSS_BASE_URL`           | RSS域名地址                                                                   | ""                          |
+| `RSS_LOCAL`              | 是否为本地RSS链接                                                             | True                        |
+| `TOKEN_EXPIRE_MINUTES`   | 登录会话有效时长(分钟)                                                         | 60                          |
+| `GATHER.CONTENT`         | 是否采集内容                                                                  | True                        |
+| `GATHER.MODEL`           | 采集模式(web模式可采集发布链接，api模式可采集临时链接)                           | web                         |
+| `LOG_FILE`               | 日志文件路径(空表示不输出到文件)                                               | -                           |
+| `LOG_LEVEL`              | 日志级别(DEBUG, INFO, WARNING, ERROR, CRITICAL)                              | INFO                        |
+| `USERNAME`               | 管理员用户名                                                                  | admin                       |
+| `PASSWORD`               | 管理员密码                                                                    | admin@123                   |
 
 
 
@@ -131,7 +147,7 @@ API服务启动后，访问以下地址查看文档：
 docker run -d \
   --name we-mp-rss \
   -p 8001:8001 \
-  -e DB=sqlite:///db.db \
+  -e DB=sqlite:///data/db.db \
   -e USERNAME:admin \
   -e PASSWORD:admin@123 \
   -e DINGDING_WEBHOOK=https://oapi.dingtalk.com/robot/send?access_token=xxx \
@@ -144,7 +160,7 @@ docker run -d \
 docker run -d \
   --name we-mp-rss \
   -p 8001:8001 \
-  -e DB=mysql+pymysql://<username>:<password>@<host>/<database> \
+  -e DB=mysql+pymysql://<username>:<password>@<host>/<database>?charset=utf8mb4 \
   -e USERNAME:admin \
   -e PASSWORD:admin@123 \
   -e DINGDING_WEBHOOK=https://oapi.dingtalk.com/robot/send?access_token=xxx \
@@ -214,4 +230,3 @@ npm run build
 ## 许可证
 
 MIT License
-
