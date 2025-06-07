@@ -17,11 +17,22 @@ feed_template = """
 ### {{feed.mp_name}} 订阅消息：
 {% if articles %}
 {% for article in articles %}
-- [**{{ article.title }}**]({{article.url}}) ({{ article.publish_time }})\n
+- [**{{ article.title }}**]({{article.url}}) ()
+{{=__import__('datetime').datetime.strftime(datetime.fromtimestamp(article.publish_time), "%Y/%m/%d %H:%M")}}
+{{=__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}}
 {% endfor %}
 {% else %}
 - 暂无文章\n
 {% endif %}
+
+Eval表达式示例:
+1. 文章数量: {{=len(articles)}}
+2. 名称大写: {{=feed['mp_name'].upper()}}
+3. 最新日期: {{=__import__('datetime').datetime.strftime(__import__('datetime').datetime.fromtimestamp(articles[0]['publish_time']), "%Y/%m/%d %H:%M").split()[0] if articles else '无'}}
+4. 数学函数: 圆周率≈{{=__import__('math').pi}}
+5. 随机数: {{=__import__('random').randint(1, 100)}}
+6. 正则提取: {{=__import__('re').search(r'\d+', str(articles[0]['publish_time'])).group() if articles else ''}}
+7. 当前时间: {{=__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}}
 """
 
 # 从数据库获取真实Feed和Article数据
@@ -38,7 +49,8 @@ context4 = {
         {
             "title": article.title,
             "url": f"{article.url}",
-            "publish_time": datetime.strftime(datetime.fromtimestamp(article.publish_time), "%Y/%m/%d %H:%M")
+            # "publish_time": datetime.strftime(datetime.fromtimestamp(article.publish_time), "%Y/%m/%d %H:%M")
+            "publish_time": article.publish_time
         } for article in articles
     ]
 }

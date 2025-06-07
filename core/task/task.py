@@ -2,7 +2,7 @@ import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from typing import Callable, Any, Optional
-from .log import logger
+from core.log import logger
 # 设置日志
 
 class TaskScheduler:

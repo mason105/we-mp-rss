@@ -8,7 +8,10 @@ from typing import Optional
 from core.models import User as DBUser
 from core.db import DB
 from core.config import  cfg,API_BASE
-# 配置
+from sqlalchemy.orm import Session
+from core.models import User
+from passlib.context import CryptContext
+
 SECRET_KEY = cfg.get("secret","csol2025")  # 生产环境应使用更安全的密钥
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(cfg.get("token_expire_minutes",30))
@@ -59,7 +62,7 @@ def get_user(username: str) -> Optional[DBUser]:
         print(f"获取用户错误: {str(e)}")
         return None
 
-def authenticate_user(username: str, password: str) -> Optional[DBUser]:
+def authenticate_user( username: str, password: str) -> Optional[DBUser]:
     """验证用户凭据"""
     user = get_user(username)
     if not user or not pwd_context.verify(password, user.password_hash):

@@ -12,7 +12,7 @@ from core.print import print_warning,print_info,print_error
 class Db:
     connection_str: str=None
     def __init__(self):
-        self._session: Optional[sessionmaker] = None
+        self._session_factory: Optional[sessionmaker] = None
         self.engine = None
     def get_engine(self) -> Engine:
         """Return the SQLAlchemy engine for this database connection."""
@@ -36,8 +36,8 @@ class Db:
                         pass
                     open(db_path, 'w').close()
                     
-            self.engine = create_engine(con_str)
-            Session = sessionmaker(bind=self.engine)
+            self.engine = create_engine(con_str,pool_size=10, max_overflow=300, pool_recycle=3600, pool_pre_ping=True)
+            Session = sessionmaker(bind=self.engine,expire_on_commit=True)
             self._session = Session()
         except Exception as e:
             print(f"Error creating database connection: {e}")
@@ -61,6 +61,7 @@ class Db:
             
     def add_article(self, article_data: dict) -> bool:
         try:
+            session=self.get_session()
             from datetime import datetime
             art = Article(**article_data)
             if art.created_at is None:
@@ -69,21 +70,20 @@ class Db:
                 art.updated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             art.created_at=datetime.strptime(art.created_at ,'%Y-%m-%d %H:%M:%S')
             art.updated_at=datetime.strptime(art.updated_at,'%Y-%m-%d %H:%M:%S')
-            art.content=art.content
+            art.content=str(art.content)[:65535] if art.content else ""
             from core.models.base import DATA_STATUS
             art.status=DATA_STATUS.ACTIVE
-            self._session.add(art) 
+            session.add(art) 
             # self._session.merge(art)
-            self._session.commit()
+            session.commit()
         except Exception as e:
-            self._session.rollback()
-            print(f"Failed to add article: {e}",e)
+            print_error(f"Failed to add article: {e}")
             return False
         return True    
         
     def get_articles(self, id:str=None, limit:int=30, offset:int=0) -> List[Article]:
         try:
-            data = self._session.query(Article).limit(limit).offset(offset)
+            data = self.get_session().query(Article).limit(limit).offset(offset)
             return data
         except Exception as e:
             print(f"Failed to fetch Feed: {e}")
@@ -92,7 +92,7 @@ class Db:
     def get_all_mps(self) -> List[Feed]:
         """Get all Feed records"""
         try:
-            return self._session.query(Feed).all()
+            return self.get_session().query(Feed).all()
         except Exception as e:
             print(f"Failed to fetch Feed: {e}")
             return e
@@ -100,7 +100,7 @@ class Db:
     def get_mps_list(self, mp_ids:str) -> List[Feed]:
         try:
             ids=mp_ids.split(',')
-            data = self._session.query(Feed).filter(Feed.id.in_(ids)).all()
+            data =  self.get_session().query(Feed).filter(Feed.id.in_(ids)).all()
             return data
         except Exception as e:
             print(f"Failed to fetch Feed: {e}")
@@ -108,7 +108,7 @@ class Db:
     def get_mps(self, mp_id:str) -> Optional[Feed]:
         try:
             ids=mp_id.split(',')
-            data = self._session.query(Feed).filter_by(id= mp_id).first()
+            data =  self.get_session().query(Feed).filter_by(id= mp_id).first()
             return data
         except Exception as e:
             print(f"Failed to fetch Feed: {e}")
@@ -119,19 +119,18 @@ class Db:
         return data.faker_id
         
     def get_session(self):
-        """获取数据库会话"""
-        if not self._session:
-            self.init(self.connection_str)
-            print_warning("Database reinitialized")
-        else:
-            # 检查会话是否有效
-            try:
-                self._session.execute(Text("SELECT 1"))
-            except:
-                self.close()
-                self.init(self.connection_str)
-                print_warning("Database reinitialized due to stale connection")
-        return self._session
+        """获取新的数据库会话"""
+        if self._session_factory is None:
+            self._session_factory = sessionmaker(bind=self.engine, expire_on_commit=False)
+        return self._session_factory()
+        
+    def session_dependency(self):
+        """FastAPI依赖项，用于请求范围的会话管理"""
+        session = self.get_session()
+        try:
+            yield session
+        finally:
+            session.close()
 
 # 全局数据库实例
 DB = Db()

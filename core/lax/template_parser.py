@@ -15,7 +15,27 @@ class TemplateParser:
         """Initialize the template parser with a template string."""
         self.template = template
         self.compiled = None
+        self.custom_functions = {}
         
+    def register_function(self, name: str, func: callable) -> None:
+        """
+        Register a custom function to be available in template expressions.
+        
+        Args:
+            name: The name to use in templates
+            func: The function to register
+        """
+        self.custom_functions[name] = func
+        
+    def register_functions(self, functions: Dict[str, callable]) -> None:
+        """
+        Register multiple custom functions at once.
+        
+        Args:
+            functions: Dictionary of function names to functions
+        """
+        self.custom_functions.update(functions)
+
     def compile_template(self) -> None:
         """Compile the template into an intermediate representation."""
         # Split template into static parts and control blocks
@@ -35,10 +55,10 @@ class TemplateParser:
         Returns:
             The rendered template as a string
         """
-        # print("\n===== RENDER DEBUG START =====")
-        # print(f"Template length: {len(self.template)} chars")
-        # print(f"Context keys: {list(context.keys())}")
-        # print(f"Context values: { {k: type(v) for k, v in context.items()} }")
+        # Security check: validate context keys
+        for key in context.keys():
+            if not isinstance(key, str) or not key.isidentifier():
+                raise ValueError(f"Invalid context key: {key}. Keys must be valid Python identifiers")
         
         if self.compiled is None:
             print("Compiling template...")
@@ -64,14 +84,16 @@ class TemplateParser:
                     try:
                         # Evaluate the expression (after =)
                         expr = var_expr[1:]
-                        print(f"DEBUG - Evaluating expression: {expr}")
-                        print(f"DEBUG - Available variables: {list(context.keys())}")
-                        result = eval(expr, {}, context)
-                        print(f"DEBUG - Expression result: {result} (type: {type(result)})")
+                        if not self._is_safe_expression(expr):
+                            raise ValueError("Potentially dangerous expression detected")
+                            
+                        # Create safe evaluation environment
+                        safe_globals = self._get_safe_globals()
+                        eval_globals = {**safe_globals, **self.custom_functions}
+                        
+                        result = eval(expr, eval_globals, context)
                         output.append(str(result))
                     except Exception as e:
-                        print(f"ERROR evaluating expression '{var_expr}': {str(e)}")
-                        print(f"DEBUG - Context at error: {context}")
                         output.append(f'[Error: {str(e)}]')
                 elif '.' in var_expr:
                     # print(f"DEBUG - Processing nested variable: {var_expr}")  # Debug
@@ -99,8 +121,22 @@ class TemplateParser:
                 # Handle if condition
                 if block.startswith('if '):
                     condition = block[3:].strip()
-                    result = bool(self._evaluate_condition(condition, context))
-                    # print(f"DEBUG - Evaluating condition '{condition}': result={result}")
+                    print(f"\nDEBUG - Processing if block with condition: {condition}")
+                    print(f"DEBUG - Available functions: {list(self.custom_functions.keys())}")
+                    print(f"DEBUG - Context keys: {list(context.keys())}")
+                    result, updated_context = self._evaluate_condition(condition, context)
+                    print(f"DEBUG - Condition evaluation result: {result}")
+                    print(f"DEBUG - Updated context: {updated_context}")
+                    # Merge all variables except special ones and functions
+                    for k, v in updated_context.items():
+                        if not k.startswith('__') and k not in self.custom_functions:
+                            # Only update context if the key doesn't exist or was modified
+                            if k not in context or context[k] != v:
+                                context[k] = v
+                                print(f"DEBUG - Updated context with: {k} = {v}")
+                    # Ensure final_price is available in context if it was calculated
+                    if 'final_price' in updated_context:
+                        context['final_price'] = updated_context['final_price']
                     
                     # Find matching endif using helper method
                     endif_idx = self._skip_control_block(i, 'if', 'endif')
@@ -172,15 +208,29 @@ class TemplateParser:
                         for part in loop_content:
                             if part is None:
                                 continue
-                                
-                            # print(f"DEBUG - Processing part: {repr(part)}")  # Debug
                             
+                            # print(f"DEBUG - Processing part: {repr(part)}")  # Debug
+                        
                             if isinstance(part, str) and part.startswith('{{') and part.endswith('}}'):
                                 # Handle variable reference
                                 var_expr = part[2:-2].strip()
                                 # print(f"DEBUG - Evaluating variable: {var_expr}")  # Debug
-                                
-                                if '.' in var_expr:
+                            
+                                if var_expr.startswith('='):
+                                    # Handle eval expressions
+                                    try:
+                                        expr = var_expr[1:]
+                                        if not self._is_safe_expression(expr):
+                                            raise ValueError("Potentially dangerous expression detected")
+                                        
+                                        safe_globals = self._get_safe_globals()
+                                        eval_globals = {**safe_globals, **self.custom_functions}
+                                    
+                                        result = eval(expr, eval_globals, loop_context)
+                                        value = str(result)
+                                    except Exception as e:
+                                        value = f'[Error: {str(e)}]'
+                                elif '.' in var_expr:
                                     # Handle nested attributes
                                     parts = var_expr.split('.')
                                     current = loop_context.get(parts[0], {})
@@ -196,7 +246,7 @@ class TemplateParser:
                                 else:
                                     # Handle simple variable
                                     value = str(loop_context.get(var_expr, ''))
-                                
+                            
                                 # print(f"DEBUG - Variable value: {value}")  # Debug
                                 item_output.append(value)
                             else:
@@ -234,37 +284,116 @@ class TemplateParser:
         result = ''.join(output)
         return self._clean_output(result)
     
-    def _evaluate_condition(self, condition: str, context: Dict[str, Any]) -> bool:
-        """Evaluate a condition expression in the given context."""
+    def _get_safe_globals(self) -> Dict[str, Any]:
+        """Return a dictionary of safe builtins for eval/exec."""
+        safe_builtins = {
+            'None': None,
+            'True': True,
+            'False': False,
+            'bool': bool,
+            'int': int,
+            'float': float,
+            'str': str,
+            'list': list,
+            'dict': dict,
+            'tuple': tuple,
+            'len': len,
+            'sum': sum,
+            'min': min,
+            'max': max,
+            'abs': abs,
+            'round': round
+        }
+        return safe_builtins
+
+    def _is_safe_expression(self, expr: str) -> bool:
+        """Check if an expression contains potentially dangerous operations."""
+        forbidden = [
+            'import', 'open', 'exec', 'eval', 'system', 'subprocess',
+            '__import__', 'getattr', 'setattr', 'delattr', 'compile',
+            'globals', 'locals', 'vars', 'dir', 'help', 'reload',
+            'input', 'file', 'execfile', 'reload', 'exit', 'quit'
+        ]
+        expr_lower = expr.lower()
+        return not any(keyword in expr_lower for keyword in forbidden)
+
+    def _evaluate_condition(self, condition: str, context: Dict[str, Any]) -> tuple:
+        """
+        Evaluate a condition expression or code block in the given context.
+        Returns (result, updated_context) where updated_context contains any new variables
+        created during evaluation.
+        """
         try:
+            if not self._is_safe_expression(condition):
+                raise ValueError(f"Potentially dangerous expression: {condition}")
+            
+            # Create safe evaluation environment
+            safe_globals = self._get_safe_globals()
+            eval_globals = {**safe_globals, **self.custom_functions}
+            
+            # Make a copy of context to avoid modifying the original
+            local_vars = context.copy()
+            
+            # Handle multi-line code blocks
+            if '\n' in condition.strip():
+                # Compile and execute the code block in restricted environment
+                code = compile(condition, '<string>', 'exec')
+                exec(code, eval_globals, local_vars)
+                # The last expression's value should be in __result__
+                result = bool(local_vars.get('__result__', False))
+                # Return result and updated context (excluding special vars)
+                updated_context = {k: v for k, v in local_vars.items() 
+                                 if not k.startswith('__') and k not in self.custom_functions}
+                
+                # Debug output
+                print(f"DEBUG - Condition evaluation result: {result}")
+                print(f"DEBUG - Local vars after execution: {local_vars.keys()}")
+                print(f"DEBUG - Updated context to return: {updated_context.keys()}")
+                
+                # Ensure all calculated variables are included
+                for k, v in local_vars.items():
+                    if (not k.startswith('__') and 
+                        k not in self.custom_functions and 
+                        k not in updated_context):
+                        updated_context[k] = v
+                        print(f"DEBUG - Added {k} to context: {v}")
+                
+                return result, updated_context
+            
+            # Handle function calls with = prefix
+            if condition.startswith('='):
+                result = bool(eval(condition[1:], eval_globals, local_vars))
+                return result, local_vars
+            
             # Handle nested attribute access (e.g. user.is_admin)
             if '.' in condition:
                 parts = condition.split('.')
-                current = context.get(parts[0], {})
+                current = local_vars.get(parts[0], {})
                 for part in parts[1:]:
                     if isinstance(current, dict):
                         current = current.get(part, None)
                     else:
                         current = getattr(current, part, None)
                     if current is None:
-                        return False
+                        return False, local_vars
                 # Handle empty collections
                 if isinstance(current, (list, dict, set)) and not current:
-                    return False
-                return bool(current)
+                    return False, local_vars
+                return bool(current), local_vars
             
             # Handle direct variable reference
-            if condition in context:
-                value = context[condition]
-                # print(f"DEBUG - Evaluating condition '{condition}': type={type(value)}, value={value}")  # Debug
+            if condition in local_vars:
+                value = local_vars[condition]
                 if isinstance(value, (list, dict, set)):
-                    return len(value) > 0  # 所有集合类型统一检查长度
-                return bool(value)  # 其他类型保持现有逻辑
+                    return len(value) > 0, local_vars
+                return bool(value), local_vars
                 
-            # Evaluate complex expressions
-            return bool(eval(condition, {}, context))
-        except:
-            return False
+            # Evaluate other expressions
+            result = bool(eval(condition, eval_globals, local_vars))
+            return result, local_vars
+            
+        except Exception:
+            return False, context
             
     def _skip_control_block(self, start_idx: int, start_tag: str, end_tag: str) -> int:
         """Skip a control block until matching end tag is found."""
@@ -338,8 +467,12 @@ class TemplateParser:
         if iterable in context:
             return context[iterable]
         try:
-            return eval(iterable, {}, context)
-        except:
+            if not self._is_safe_expression(iterable):
+                raise ValueError("Potentially dangerous expression detected")
+            
+            safe_globals = self._get_safe_globals()
+            return eval(iterable, safe_globals, context)
+        except Exception:
             return []
             
     def _render_parts(self, parts: List[Union[str, None]], context: Dict[str, Any]) -> str:
@@ -379,3 +512,70 @@ if __name__ == '__main__':
     parser = TemplateParser(template)
     result = parser.render(context)
     print(result)
+    
+    # 示例代码 - 自定义函数功能
+    print("\n=== 自定义函数示例 ===")
+    
+    # 创建使用自定义函数的模板
+    func_template = """
+    {{= greet(name) }}
+    {{= calculate(10, 20) }}
+    {{= format_date(now) }}
+    
+    {% if 
+        # 多行代码块示例
+        user = context.get('user')
+        premium = user.get('membership') == 'premium'
+        active = user.get('is_active', False)
+        __result__ = premium and active
+    %}
+    <p>Welcome premium user {{ user.name }}!</p>
+    {% else %}
+    <p>Welcome standard user {{ user.name }}!</p>
+    {% endif %}
+    
+    {% if 
+        # 带计算的代码块示例
+        total = calculate(10, 20)
+        discount = 0.2 if user.get('membership') == 'premium' else 0.1
+        final_price = total * (1 - discount)
+        __result__ = final_price > 15
+    %}
+    <p>Special discount applied! Final price: {{ final_price }}</p>
+    {% endif %}
+    """
+    
+    # 定义自定义函数
+    def greet(name):
+        return f"Hello, {name}!"
+        
+    def calculate(x, y):
+        return x + y
+        
+    def format_date(dt):
+        return dt.strftime("%Y-%m-%d")
+        
+    def is_premium_user(user):
+        return user.get('membership') == 'premium'
+    
+    # 创建解析器并注册函数
+    func_parser = TemplateParser(func_template)
+    func_parser.register_function('greet', greet)
+    func_parser.register_function('calculate', calculate)
+    func_parser.register_function('format_date', format_date)
+    func_parser.register_function('is_premium_user', is_premium_user)
+    
+    # 准备上下文
+    from datetime import datetime
+    func_context = {
+        'name': 'Function User',
+        'now': datetime.now(),
+        'user': {
+            'name': 'test_user',
+            'membership': 'premium'  # 测试 premium 用户
+        }
+    }
+    
+    # 渲染并打印结果
+    func_result = func_parser.render(func_context)
+    print(func_result)

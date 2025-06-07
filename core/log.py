@@ -4,14 +4,18 @@ try:
     import colorlog
 except ImportError:
     colorlog = None
-
+from core.config import cfg
 global logger
 # 创建logger对象
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # 设置最低日志级别
 
+
 # 创建文件处理器，每天一个文件，保留7天备份
-handler = RotatingFileHandler('app.log', maxBytes=1024*1024, backupCount=7)
+if cfg.get("log", False):
+    handler = RotatingFileHandler('app.log', maxBytes=1024*1024, backupCount=7)
+else:
+    handler = logging.NullHandler()
 handler.setLevel(logging.DEBUG)
 
 # 创建控制台处理器
