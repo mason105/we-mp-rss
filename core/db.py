@@ -30,7 +30,10 @@ class Db:
                 import os
                 db_path = con_str[10:]  # 去掉'sqlite:///'前缀
                 if not os.path.exists(db_path):
-                    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+                    try:
+                        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+                    except Exception as e:
+                        pass
                     open(db_path, 'w').close()
                     
             self.engine = create_engine(con_str)
