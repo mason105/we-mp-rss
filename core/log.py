@@ -8,14 +8,27 @@ from core.config import cfg
 global logger
 # 创建logger对象
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # 设置最低日志级别
+level=cfg.get("log.level", "INFO").upper()
+log_filer=cfg.get("log.file", "")
+
+if level=="DEBUG":
+    logger.setLevel(logging.DEBUG)  # 设置最低日志级别
+if level=="INFO":
+    logger.setLevel(logging.INFO)  # 设置最低日志级别
+if level=="ERROR":
+    logger.setLevel(logging.ERROR)  # 设置最低日志级别
+if level=="WARNING":
+    logger.setLevel(logging.WARNING)  # 设置最低日志级别
+if level=="CRITICAL":
+    logger.setLevel(logging.CRITICAL)  # 设置最低日志级别
+
 
 
 # 创建文件处理器，每天一个文件，保留7天备份
-if cfg.get("log", False):
-    handler = RotatingFileHandler('app.log', maxBytes=1024*1024, backupCount=7)
-else:
+if len(log_filer)<=0:
     handler = logging.NullHandler()
+else:
+    handler = RotatingFileHandler(f'{log_filer}.log', maxBytes=1024*1024, backupCount=7)
 handler.setLevel(logging.DEBUG)
 
 # 创建控制台处理器
