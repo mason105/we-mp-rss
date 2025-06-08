@@ -13,8 +13,8 @@ const columns = [
   { title: '配置键', dataIndex: 'config_key' },
   { title: '配置值', dataIndex: 'config_value', width: '30%', ellipsis: true },
   { title: '描述', dataIndex: 'description' },
-  { title: '状态', slotName: 'status' },
-  { title: '操作', slotName: 'action' }
+  // { title: '状态', slotName: 'status' },
+  // { title: '操作', slotName: 'action' }
 ]
 
 const configList = ref<ConfigManagement[]>([])
