@@ -37,7 +37,7 @@ rss:
   #RSS域名地址：如https://www.xxx.com
   base_url: ${RSS_BASE_URL:-""}
   #是否为本地RSS链接，默认True，当为False时直接出外部链接
-  local: ${RSS_LOCAL:-True}
+  local: ${RSS_LOCAL:-False}
 
 #登录会话有效时长 单位分钟 默认60分钟
 token_expire_minutes: ${TOKEN_EXPIRE_MINUTES:-60}

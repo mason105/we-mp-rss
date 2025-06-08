@@ -129,7 +129,7 @@ API服务启动后，访问以下地址查看文档：
 | `DEBUG`                  | 调试模式                                                                      | False                       |
 | `MAX_PAGE`               | 第一次添加时采集的最大页数                                                      | 5                           |
 | `RSS_BASE_URL`           | RSS域名地址                                                                   | ""                          |
-| `RSS_LOCAL`              | 是否为本地RSS链接                                                             | True                        |
+| `RSS_LOCAL`              | 是否为本地RSS链接                                                             | False                        |
 | `TOKEN_EXPIRE_MINUTES`   | 登录会话有效时长(分钟)                                                         | 60                          |
 | `GATHER.CONTENT`         | 是否采集内容                                                                  | True                        |
 | `GATHER.MODEL`           | 采集模式(web模式可采集发布链接，api模式可采集临时链接)                           | web                         |
