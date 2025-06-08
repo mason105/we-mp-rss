@@ -61,6 +61,11 @@ def get_user(username: str) -> Optional[DBUser]:
     except Exception as e:
         print(f"获取用户错误: {str(e)}")
         return None
+        
+def clear_user_cache(username: str):
+    """清除指定用户的缓存"""
+    if username in _user_cache:
+        del _user_cache[username]
 
 def authenticate_user( username: str, password: str) -> Optional[DBUser]:
     """验证用户凭据"""

@@ -1,7 +1,9 @@
 import queue
 import threading
+import time
+import gc
 from typing import Callable, Any, Optional
-from core.print import print_error,print_info,print_warning,print_success
+from core.print import print_error, print_info, print_warning, print_success
 class TaskQueueManager:
     """任务队列管理器，用于管理和执行排队任务"""
     
@@ -25,8 +27,12 @@ class TaskQueueManager:
     def run_task_background(self)->None:
         threading.Thread(target=self.run_tasks, daemon=True).start()  
         print_warning("队列任务后台运行")
-    def run_tasks(self) -> None:
-        """执行队列中的所有任务，并持续运行以接收新任务"""
+    def run_tasks(self, timeout: float = 1.0) -> None:
+        """执行队列中的所有任务，并持续运行以接收新任务
+        
+        Args:
+            timeout: 等待新任务的超时时间(秒)
+        """
         with self._lock:
             if self._is_running:
                 return
@@ -34,21 +40,35 @@ class TaskQueueManager:
             
         try:
             while self._is_running:
-                with self._lock:
-                    if self._queue.empty():
-                        continue
-                    task, args, kwargs = self._queue.get()
-                
                 try:
-                    task(*args, **kwargs)
-                except Exception as e:
-                    print_error(f"队列任务执行失败: {e}")
-                finally:
-                    self._queue.task_done()
-                    print_success(f"队列任务执行完成")
+                    # 阻塞获取任务，避免CPU空转
+                    task, args, kwargs = self._queue.get(timeout=timeout)
+                    
+                    try:
+                        # 记录任务开始时间
+                        start_time = time.time()
+                        task(*args, **kwargs)
+                        # 记录任务执行时间
+                        duration = time.time() - start_time
+                        print_info(f"任务执行完成，耗时: {duration:.2f}秒")
+                    except Exception as e:
+                        print_error(f"队列任务执行失败: {e}")
+                    finally:
+                        # 确保任务完成标记和资源释放
+                        self._queue.task_done()
+                        # 强制垃圾回收
+                        gc.collect()
+                        
+                except queue.Empty:
+                    # 超时无任务，继续检查运行状态
+                    continue
+                    
         finally:
+            # 确保停止状态设置和资源清理
             with self._lock:
                 self._is_running = False
+            # 清理可能残留的资源
+            gc.collect()
     
     def stop(self) -> None:
         """停止任务执行"""

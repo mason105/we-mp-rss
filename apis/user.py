@@ -151,6 +151,10 @@ async def change_password(
         user.updated_at = datetime.now()
         session.commit()
         
+        # 清除用户缓存，确保新密码立即生效
+        from core.auth import clear_user_cache
+        clear_user_cache(current_user["username"])
+        
         from .base import success_response
         return success_response(message="密码修改成功")
         
