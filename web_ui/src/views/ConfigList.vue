@@ -21,7 +21,7 @@ const configList = ref<ConfigManagement[]>([])
 const loading = ref(false)
 const error = ref('')
 const pagination = reactive({
-  current: 0,
+  current: 1,
   pageSize: 10,
   total: 0
 })
@@ -111,13 +111,6 @@ onMounted(() => {
       <a-space direction="vertical" fill>
         <a-alert v-if="error" type="error" show-icon>{{ error }}</a-alert>
         
-        <a-button type="primary" @click="showAddModal">
-          <template #icon>
-            <icon-plus />
-          </template>
-          添加配置
-        </a-button>
-
         <a-table
           :columns="columns"
           :data="configList"
@@ -132,20 +125,7 @@ onMounted(() => {
           
           <template #action="{ record }">
             <a-space>
-              <a-button size="mini" @click="editConfig(record)">
-                <template #icon>
-                  <icon-edit />
-                </template>
-              </a-button>
-              <a-button 
-                size="mini" 
-                status="danger"
-                @click="deleteConfigItem(record.config_key)"
-              >
-                <template #icon>
-                  <icon-delete />
-                </template>
-              </a-button>
+              <!-- 操作按钮已隐藏 -->
             </a-space>
           </template>
         </a-table>

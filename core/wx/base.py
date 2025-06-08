@@ -109,6 +109,7 @@ class WxGather:
     
     def Start(self,mp_id=None):
         print(f"开始")
+        self.articles=[]
         self.get_token()
         import time
         self.update_mps(mp_id,Feed(

@@ -6,7 +6,7 @@ from core.models.config_management import ConfigManagement
 from core.db  import DB
 from core.auth import get_current_user
 from .base import  success_response, error_response
-
+from core.config import cfg
 router = APIRouter(prefix="/configs", tags=["配置管理"])
 
 
@@ -16,11 +16,14 @@ def list_configs(
     offset: int = Query(0, ge=0),
     current_user: dict = Depends(get_current_user)
 ):
-    db=DB.get_session()
+    # db=DB.get_session()
     """获取配置项列表"""
     try:
-        total = db.query(ConfigManagement).count()
-        configs = db.query(ConfigManagement).offset(offset).limit(limit).all()
+        # total = db.query(ConfigManagement).count()
+        # configs = db.query(ConfigManagement).offset(offset).limit(limit).all()
+        from core.yaml_db import YamlDB
+        configs = YamlDB.store_config_to_list(cfg._config) 
+        total=len(configs)
         return success_response(data={
             "list": configs,
             "page": {

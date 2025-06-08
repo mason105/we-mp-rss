@@ -5,6 +5,7 @@ from core.notice import notice
 from dataclasses import dataclass
 from core.lax import TemplateParser
 from datetime import datetime
+
 @dataclass
 class MessageWebHook:
     task: MessageTask
@@ -70,7 +71,7 @@ def call_webhook(hook: MessageWebHook) -> str:
     data = {
         "feed": hook.feed,
         "articles": hook.articles,
-     "task": hook.task,
+        "task": hook.task,
         'now': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     payload = parser.render(data)
@@ -93,6 +94,7 @@ def call_webhook(hook: MessageWebHook) -> str:
         raise ValueError(f"Webhook调用失败: {str(e)}")
 
 def web_hook(hook:MessageWebHook):
+
     """
     根据消息类型路由到对应的处理函数
     
@@ -105,6 +107,17 @@ def web_hook(hook:MessageWebHook):
     异常:
         ValueError: 当消息类型未知时抛出
     """
+    hook.articles = [
+        {
+            field.name: (
+                datetime.fromtimestamp(getattr(article, field.name)).strftime("%Y-%m-%d %H:%M:%S")
+                if field.name == "publish_time"
+                else getattr(article, field.name)
+            )
+            for field in Article.__table__.columns
+        }
+        for article in hook.articles
+    ]
     if hook.task.message_type == 0:  # 发送消息
         return send_message(hook)
     elif hook.task.message_type == 1:  # 调用webhook

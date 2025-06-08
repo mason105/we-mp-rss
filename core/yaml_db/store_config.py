@@ -78,6 +78,39 @@ class ConfigManager:
             session.rollback()
             self.logger.error(f"存储配置失败: {str(e)}")
             return False
+            
+    def store_config_to_list(self,config=None) -> list:
+        """
+        将配置文件转换为ConfigManagement对象列表
+        :return: 包含所有配置项的ConfigManagement对象列表
+        """
+        self.logger.info("开始转换配置到列表...")
+        if config is None:
+            config = self._load_config()
+        config_list = []
+        try:
+            for key, value in config.items():
+                if isinstance(value, dict):
+                    # 处理嵌套配置
+                    for sub_key, sub_value in value.items():
+                        config_key = f"{key}.{sub_key}"
+                        config_list.append(ConfigManagement(
+                            config_key=config_key,
+                            config_value=str(sub_value) if sub_value is not None else '',
+                            description=f"{key}配置的子项"
+                        ))
+                else:
+                    config_list.append(ConfigManagement(
+                        config_key=key,
+                        config_value=str(value) if value is not None else '',
+                        description="系统配置项"
+                    ))
+            
+            self.logger.info("配置已成功转换为列表")
+            return config_list
+        except Exception as e:
+            self.logger.error(f"配置转换失败: {str(e)}")
+            return []
 
     def _convert_to_nested_dict(self, flat_config: Dict[str, str]) -> Dict[str, Any]:
         """将扁平化的配置字典转换为嵌套字典结构"""
