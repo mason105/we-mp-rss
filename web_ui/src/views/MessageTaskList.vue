@@ -121,6 +121,9 @@ onMounted(() => {
         <h2>消息任务列表</h2>
         <a-button type="primary" @click="handleAdd">添加消息任务</a-button>
       </div>
+      <a-alert type="info" closable>
+        注意：只有添加了任务消息才会定时执行更新任务
+      </a-alert>
 
       <a-table
         :data="taskList"

@@ -52,12 +52,7 @@ def do_job(mps:list[Feed]=None,task:MessageTask=None):
             finally:
                 count=wx.all_count()
                 all_count+=count
-
-            
-                
-
                 print_success(f"任务[{item.mp_name}]执行成功,{count}成功条数")
-              
         print_success(f"所有公众号更新完成,共更新{all_count}条数据")
 
 
