@@ -100,6 +100,13 @@ onMounted(() => {
           />
         </a-form-item>
         
+        <a-form-item label="类型" field="message_type">
+          <a-radio-group v-model="formData.message_type" type="button">
+            <a-radio :value="0">Message</a-radio>
+            <a-radio :value="1">WebHook</a-radio>
+          </a-radio-group>
+        </a-form-item>
+        
         
         <a-form-item label="消息模板" field="message_template">
           <a-textarea
@@ -107,6 +114,12 @@ onMounted(() => {
             placeholder="请输入消息模板内容"
             :auto-size="{ minRows: 4, maxRows: 8 }"
           />
+          <a-button 
+            type="outline" 
+            style="margin-top: 8px"
+            @click="formData.message_template = '### {{feed.mp_name}} 订阅消息：\n{% if articles %}\n{% for article in articles %}\n- [**{{ article.title }}**]({{article.url}}) ({{ article.publish_time }})\n\n{% endfor %}\n{% else %}\n- 暂无文章\n\n{% endif %}'">
+            使用示例模板
+          </a-button>
         </a-form-item>
 
         <a-form-item label="WebHook地址" field="web_hook_url">

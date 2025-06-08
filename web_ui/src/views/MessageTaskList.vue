@@ -136,6 +136,13 @@ onMounted(() => {
               {{ parseCronExpression(record.cron_exp) }}
             </template>
           </a-table-column>
+          <a-table-column title="类型" :width="100">
+            <template #cell="{ record }">
+              <a-tag :color="record.message_type === 1 ? 'green' : 'red'">
+                {{ record.message_type === 1 ? 'WeekHook' : 'Message' }}
+              </a-tag>
+            </template>
+          </a-table-column>
           <a-table-column title="状态" :width="100">
             <template #cell="{ record }">
               <a-tag :color="record.status === 1 ? 'green' : 'red'">
