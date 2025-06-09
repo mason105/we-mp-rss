@@ -77,7 +77,10 @@ class Db:
             # self._session.merge(art)
             session.commit()
         except Exception as e:
-            print_error(f"Failed to add article: {e}")
+            if "UNIQUE" in str(e):
+                print_warning(f"Article already exists: {art.id}")
+            else:
+                print_error(f"Failed to add article: {e}")
             return False
         return True    
         

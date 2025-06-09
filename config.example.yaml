@@ -15,7 +15,7 @@ notice:
   
 secret: ${SECRET_KEY:-we-mp-rss}
 token: 
-user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.39...
+user_agent: ${USER_AGENT:-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36}
 
 #定时任务执行每篇稿件间隔时间 单位秒 默认10s
 interval: ${INTERVAL:- 10}
@@ -28,7 +28,7 @@ model: ${MODEL:-web}
 #API服务端口
 port: ${PORT:-8001}
 #调试模式
-debug: ${DEBUG:-False}
+debug: False
 
 #最大页数 第一次添加 采集的页数默认5页
 max_page: ${MAX_PAGE:-5}
