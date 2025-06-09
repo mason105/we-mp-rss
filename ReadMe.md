@@ -118,8 +118,8 @@ API服务启动后，访问以下地址查看文档：
 [更多环境变量配置请查看`config.example.yaml`文件](config.example.yaml)
 | 变量名                   | 说明                                                                          | 默认值                      |
 | ------------------------ | ---------------------------------------------------------------------------- | --------------------------- |
-| `DB`                     | **必填** 数据库地址 例如: mysql+pymysql://<用户名>:<密码>@<数据库IP>/<数据库名>  | sqlite:///db.db             |
-| `INTERVAL`               | 抓取间隔时间，单位秒                                                           | `300`                       |          
+| `DB`                     | **必填** 数据库地址 例如: mysql+pymysql://<用户名>:<密码>@<数据库IP>/<数据库名>  | sqlite:///data/db.db        |
+| `INTERVAL`               | 抓取间隔时间，单位秒                                                           | `10`                        |          
 | `SECRET_KEY`             | JWT授权加密KEY                                                                | 'we-mp-rss'                 |
 | `DINGDING_WEBHOOK`       | 钉钉机器人Webhook地址                                                          | -                           |
 | `WECHAT_WEBHOOK`         | 微信机器人Webhook地址                                                          | -                           |
@@ -133,10 +133,9 @@ API服务启动后，访问以下地址查看文档：
 | `TOKEN_EXPIRE_MINUTES`   | 登录会话有效时长(分钟)                                                         | 60                          |
 | `GATHER.CONTENT`         | 是否采集内容                                                                  | True                        |
 | `GATHER.MODEL`           | 采集模式(web模式可采集发布链接，api模式可采集临时链接)                           | web                         |
-| `LOG_FILE`               | 日志文件路径(空表示不输出到文件)                                               | -                           |
+| `LOG_FILE`               | 日志文件路径，默认为空字符串，表示不输出到文件。如果要输出到文件，可以指定一个路径如：/var/log/we-mp-rss.log | -                           |
 | `LOG_LEVEL`              | 日志级别(DEBUG, INFO, WARNING, ERROR, CRITICAL)                              | INFO                        |
-| `USERNAME`               | 管理员用户名                                                                  | admin                       |
-| `PASSWORD`               | 管理员密码                                                                    | admin@123                   |
+| `RSS_FULL_CONTEXT`       | 是否显示全文                                                                | False                       |
 
 
 

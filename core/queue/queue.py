@@ -53,6 +53,7 @@ class TaskQueueManager:
                         print_info(f"任务执行完成，耗时: {duration:.2f}秒")
                     except Exception as e:
                         print_error(f"队列任务执行失败: {e}")
+                        # raise
                     finally:
                         # 确保任务完成标记和资源释放
                         self._queue.task_done()

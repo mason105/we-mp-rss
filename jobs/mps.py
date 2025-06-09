@@ -44,14 +44,14 @@ def do_job(mps:list[Feed]=None,task:MessageTask=None):
         for item in mps:
             try:
                 wx.get_Articles(item.faker_id,CallBack=UpdateArticle,Mps_id=item.id,Mps_title=item.mp_name, MaxPage=1,Over_CallBack=Update_Over,interval=interval)
-                from jobs.webhook import MessageWebHook 
-                tms=MessageWebHook(task=task,feed=item,articles=wx.articles)
-                web_hook(tms)
             except Exception as e:
                 print(e)
             finally:
                 count=wx.all_count()
                 all_count+=count
+                from jobs.webhook import MessageWebHook 
+                tms=MessageWebHook(task=task,feed=item,articles=wx.articles)
+                web_hook(tms)
                 print_success(f"任务[{item.mp_name}]执行成功,{count}成功条数")
         print_success(f"所有公众号更新完成,共更新{all_count}条数据")
 

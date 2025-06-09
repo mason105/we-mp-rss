@@ -205,8 +205,7 @@ async def get_mp_articles_rss(
             "title": article.title,
             "link":  f"{rss_domain}rss/feed/{article.id}" if cfg.get("rss.local",False) else article.url,
             "description": article.description if article.description != "" else article.title,
-
-            # "updated": article.updated_at.isoformat()
+            "content": article.content,
             "updated": datetime.datetime.fromtimestamp(article.publish_time)
         } for article in articles]
         

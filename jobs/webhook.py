@@ -94,7 +94,6 @@ def call_webhook(hook: MessageWebHook) -> str:
         raise ValueError(f"Webhook调用失败: {str(e)}")
 
 def web_hook(hook:MessageWebHook):
-
     """
     根据消息类型路由到对应的处理函数
     
@@ -107,20 +106,39 @@ def web_hook(hook:MessageWebHook):
     异常:
         ValueError: 当消息类型未知时抛出
     """
-    hook.articles = [
-        {
-            field.name: (
-                datetime.fromtimestamp(getattr(article, field.name)).strftime("%Y-%m-%d %H:%M:%S")
-                if field.name == "publish_time"
-                else getattr(article, field.name)
-            )
-            for field in Article.__table__.columns
-        }
-        for article in hook.articles
-    ]
-    if hook.task.message_type == 0:  # 发送消息
-        return send_message(hook)
-    elif hook.task.message_type == 1:  # 调用webhook
-        return call_webhook(hook)
-    else:
-        raise ValueError(f"未知的消息类型: {hook.task.message_type}")
+    try:
+        # 处理articles参数，兼容Article对象和字典类型
+        processed_articles = []
+        for article in hook.articles:
+            if isinstance(article, dict):
+                # 如果是字典类型，直接使用
+                processed_article = {
+                    field.name: (
+                        datetime.fromtimestamp(article[field.name]).strftime("%Y-%m-%d %H:%M:%S")
+                        if field.name == "publish_time" and field.name in article
+                        else article.get(field.name, "")
+                    )
+                    for field in Article.__table__.columns
+                }
+            else:
+                # 如果是Article对象，使用getattr获取属性
+                processed_article = {
+                    field.name: (
+                        datetime.fromtimestamp(getattr(article, field.name)).strftime("%Y-%m-%d %H:%M:%S")
+                        if field.name == "publish_time"
+                        else getattr(article, field.name)
+                    )
+                    for field in Article.__table__.columns
+                }
+            processed_articles.append(processed_article)
+        
+        hook.articles = processed_articles
+        
+        if hook.task.message_type == 0:  # 发送消息
+            return send_message(hook)
+        elif hook.task.message_type == 1:  # 调用webhook
+            return call_webhook(hook)
+        else:
+            raise ValueError(f"未知的消息类型: {hook.task.message_type}")
+    except Exception as e:
+        raise ValueError(f"处理消息时出错: {str(e)}")
