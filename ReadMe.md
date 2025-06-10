@@ -70,11 +70,16 @@ pip install -r requirements.txt
 复制并修改配置文件：
 ```bash
 cp config.example.yaml config.yaml
+copy config.example.yaml config.yaml
 ```
 
 4. 启动API服务
 ```bash
 uvicorn web:app --host 0.0.0.0 --port 8001 --reload
+```
+或
+```bash
+python3 main.py -job true -init true
 ```
 
 ### 前端界面
@@ -99,6 +104,7 @@ npm run dev
 配置定时抓取微信公众号内容：
 ```bash
 python job.py
+
 ```
 
 ## 配置说明
@@ -215,6 +221,8 @@ npm run build
 - [GitHub：](https://github.com/rachelos/we-mp-rss)https://github.com/rachelos/we-mp-rss
 - [Gitee：](https://gitee.com/rachel_os/we-mp-rss)https://gitee.com/rachel_os/we-mp-rss
 
+# 分享交流群
+QQ:244538330
 
 # 友情链接
 [WeWe RSS](https://github.com/cooderl/wewe-rss)
