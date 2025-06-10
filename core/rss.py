@@ -66,7 +66,7 @@ class RSS:
         # 创建根元素(RSS标准)
         rss = ET.Element("rss", version="2.0")
         if full_context==True:
-            rss.attrib["xmlns:content"] = "http://purl.org/rss/2.0/modules/content/"
+            rss.attrib["xmlns:content"] = "http://purl.org/rss/1.0/modules/content/"
         channel=ET.SubElement(rss, "channel")
         # 设置渠道信息
         ET.SubElement(channel, "title").text = title
