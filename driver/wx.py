@@ -9,6 +9,7 @@ import time
 import os
 import re
 import json
+from core.print import print_error
 class Wx:
     HasLogin=False
     SESSION=None
@@ -59,6 +60,8 @@ class Wx:
             print(f"提取token时出错: {str(e)}")
             return None
     def GetCode(self,Callback=None):
+        if  self.isLOCK:
+            return {"code":self.wx_login_url,"msg":"微信公众平台登录脚本正在运行，请勿重复运行！"}
         print("子线程执行中")
         from threading import Thread
         thread = Thread(target=self.wxLogin,args=(Callback,))  # 传入函数名
@@ -84,8 +87,7 @@ class Wx:
             return None
         try:
             if  self.isLOCK:
-                raise Exception("微信公众平台登录脚本正在运行，请勿重复运行！")
-                return None
+                return "微信公众平台登录脚本正在运行，请勿重复运行！"
             self.HasLogin=False
             self.isLOCK=True
             self.clean()
@@ -157,6 +159,9 @@ class Wx:
             }
             if Callback!=None:
                 Callback(self.SESSION)
+        except NameError as e:
+            print_error(f"\n错误发生: {str(e)}")
+            return self.SESSION
         except Exception as e:
             print(f"\n错误发生: {str(e)}")
             print("可能的原因:")

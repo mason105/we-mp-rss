@@ -30,21 +30,42 @@ export interface VerifyResult {
 export const verifyToken = () => {
   return http.get<VerifyResult>('/wx/auth/verify')
 }
+let qrCodeIntervalId:number = 0;
+let qrCodeCounter = 0;
+
 export const QRCode = () => {
   return new Promise((resolve, reject) => {
+    if (qrCodeIntervalId) {
+      clearInterval(qrCodeIntervalId);
+      qrCodeIntervalId = 0;
+    }
+    qrCodeCounter = 0;
+    
     http.get('/wx/auth/qr/code').then(res => {
-      const intervalId = setInterval(() => {
+      const maxAttempts = 60;
+      qrCodeIntervalId = setInterval(() => {
+        qrCodeCounter++;
+        if(qrCodeCounter > maxAttempts) {
+          clearInterval(qrCodeIntervalId!);
+          qrCodeIntervalId = 0;
+          reject(new Error('获取二维码超时'));
+          return;
+        }
         axios.head(res?.code).then(response => {
           if(response.status==200){
             console.log(response)
-            clearInterval(intervalId)
+            clearInterval(qrCodeIntervalId!);
+            qrCodeIntervalId = 0;
             resolve(res)
           }
         }).catch(err => {
-          // clearInterval(intervalId)
-          // reject(err)
+          if(qrCodeCounter >= maxAttempts) {
+            clearInterval(qrCodeIntervalId!);
+            qrCodeIntervalId = null;
+            reject(err);
+          }
         })
-      }, 3000)
+      }, 1000)
     }).catch(reject)
   })
 }

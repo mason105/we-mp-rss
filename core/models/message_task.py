@@ -28,6 +28,6 @@ class MessageTask(Base):
     # 定义任务状态字段，默认值为 pending
     status = Column(Integer, default=0)
     # 定义创建时间字段，默认值为当前 UTC 时间
-    created_at = Column(DateTime, onupdate=datetime.utcnow)
+    created_at = Column(DateTime)
     # 定义更新时间字段，默认值为当前 UTC 时间，更新时自动更新为当前时间
-    updated_at = Column(DateTime,onupdate=datetime.utcnow)
+    updated_at = Column(DateTime )
