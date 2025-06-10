@@ -1,4 +1,4 @@
-from .base import Base, Column, String, Integer, DateTime, Boolean
+from .base import Base, Column, String, Integer, DateTime, Boolean,Text
 from sqlalchemy import JSON
 
 class User(Base):
@@ -7,8 +7,8 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
-    role = Column(String(20), default='user')  # admin/editor/user
-    permissions = Column(JSON, default=list)  # 权限列表
+    role = Column(String(20))  # admin/editor/user
+    permissions = Column(Text)  # 权限列表
     nickname = Column(String(50), default='')  # 昵称
     avatar = Column(String(255), default='/static/default-avatar.png')  # 头像
     email = Column(String(50), default='')

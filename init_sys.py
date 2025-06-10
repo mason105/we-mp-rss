@@ -26,7 +26,8 @@ def sync_models():
      # 同步模型到表结构
          from core.data_sync import ModelSync
          DB.create_tables()
-         ModelSync(eng=DB.get_engine())
+         sync=ModelSync(eng=DB.get_engine())
+         sync.sync_all()
          print_info("模型同步完成")
 
      

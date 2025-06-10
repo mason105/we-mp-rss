@@ -1,1 +1,1 @@
-python3 main.py -job true -init true
+python3 main.py -job True -init True

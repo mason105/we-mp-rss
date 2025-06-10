@@ -1,4 +1,4 @@
-from sqlalchemy import inspect, create_engine, text
+from sqlalchemy import inspect, create_engine, text,String,Text
 from sqlalchemy.engine import Engine
 from typing import List, Type
 from .models.base import Base
@@ -7,6 +7,10 @@ from .models.config_management import ConfigManagement
 from .models.feed import Feed
 from .models.message_task import MessageTask
 from .models.user import User
+def printf(*args):
+    if "SYNC" in str(args):
+        print(args)
+    pass
 class ModelSync:
     """模型字段同步到数据库的工具类"""
     
@@ -43,10 +47,10 @@ class ModelSync:
         """同步所有模型到数据库
         :param force_update: 是否强制更新字段类型，默认为False
         """
-        print("[SYNC] 开始同步所有模型到数据库...")
+        printf("[SYNC] 开始同步所有模型到数据库...")
         for model in self.models:
             self.sync_model(model, force_update)
-        print("[SYNC] 所有模型同步完成")
+        printf("[SYNC] 所有模型同步完成")
     
     def sync_model(self, model: Type[Base], force_update: bool = False) -> None:
         """
@@ -59,11 +63,11 @@ class ModelSync:
             table_name = model.__tablename__
             db_type = self.get_database_type()
             
-            print(f"[SYNC] 开始同步表 {table_name} (数据库类型: {db_type})...")
+            printf(f"[SYNC] 开始同步表 {table_name} (数据库类型: {db_type})...")
             
             # 检查表是否存在
             if not inspector.has_table(table_name):
-                print(f"[SYNC] 表 {table_name} 不存在，创建新表")
+                printf(f"[SYNC] 表 {table_name} 不存在，创建新表")
                 with self.engine.begin() as conn:
                     # 自定义表创建逻辑以支持主外键约束
                     table = model.__table__
@@ -90,7 +94,7 @@ class ModelSync:
                             elif db_type == 'postgresql':
                                 # PostgreSQL使用SERIAL会自动创建序列
                                 column_def += " SERIAL"
-                            print(f"[DEBUG] 为主键列 {column.name} 设置自动增长")
+                            printf(f"[DEBUG] 为主键列 {column.name} 设置自动增长")
             
                         if default_value is not None:
                             column_def += f" DEFAULT '{default_value}'" if isinstance(default_value, str) else f" DEFAULT {default_value}"
@@ -125,10 +129,10 @@ class ModelSync:
                         create_sql += ", " + ", ".join(foreign_keys)
                     
                     create_sql += ")"
-                    print(f"[DEBUG] 执行CREATE TABLE语句: {create_sql}")
+                    printf(f"[SQL] 执行表创建SQL:\n{create_sql}")
                     conn.execute(text(create_sql))
                     
-                print(f"[SYNC] 表 {table_name} 创建成功，包含 {len(primary_keys)} 个主键和 {len(foreign_keys)} 个外键")
+                printf(f"[SYNC] 表 {table_name} 创建成功，包含 {len(primary_keys)} 个主键和 {len(foreign_keys)} 个外键")
                 return
             
             # 获取数据库表列和模型列
@@ -139,9 +143,9 @@ class ModelSync:
             for col_name, model_col in model_columns.items():
                 if col_name not in db_columns:
                     # 添加新列
-                    print(f"[SYNC] 检测到新列 {col_name}({model_col.type})")
+                    printf(f"[SYNC] 检测到新列 {col_name}({model_col.type})")
                     self._add_column(table_name, model_col)
-                    print(f"[SYNC] 表 {table_name} 添加列 {col_name} 成功")
+                    printf(f"[SYNC] 表 {table_name} 添加列 {col_name} 成功")
                 else:
                     # 检查类型是否一致
                     db_col = db_columns[col_name]
@@ -161,28 +165,28 @@ class ModelSync:
                     
                         # 记录差异详情
                         if db_default != model_default:
-                            print(f"[SYNC] 检测到列 {col_name} 默认值差异: 数据库({db_default}) vs 模型({model_default})")
+                            printf(f"[SYNC] 检测到列 {col_name} 默认值差异: 数据库({db_default}) vs 模型({model_default})")
                         if db_col.get('primary_key', False) != model_col.primary_key:
-                            print(f"[SYNC] 检测到列 {col_name} 主键差异: 数据库({db_col.get('primary_key', False)}) vs 模型({model_col.primary_key})")
+                            printf(f"[SYNC] 检测到列 {col_name} 主键差异: 数据库({db_col.get('primary_key', False)}) vs 模型({model_col.primary_key})")
                         if ('foreign_keys' in db_col) != (hasattr(model_col, 'foreign_keys') and len(model_col.foreign_keys) > 0):
-                            print(f"[SYNC] 检测到列 {col_name} 外键标记差异")
+                            printf(f"[SYNC] 检测到列 {col_name} 外键标记差异")
                     
-                        print(f"[SYNC] 检测到列 {col_name} 类型差异: 数据库({db_type_str}) vs 模型({model_type_str})")
+                        printf(f"[SYNC] 检测到列 {col_name} 类型差异: 数据库({db_type_str}) vs 模型({model_type_str})")
                         self._alter_column(table_name, model_col)
-                        print(f"[SYNC] 表 {table_name} 更新列 {col_name} 成功")
+                        printf(f"[SYNC] 表 {table_name} 更新列 {col_name} 成功")
                     else:
-                        print(f"[SYNC] 表 {table_name} 列 {col_name} 类型、默认值和约束一致({db_type_str})")
+                        printf(f"[SYNC] 表 {table_name} 列 {col_name} 类型、默认值和约束一致({db_type_str})")
             
-            print(f"[SYNC] 表 {table_name} 同步完成")
+            printf(f"[SYNC] 表 {table_name} 同步完成")
         except Exception as e:
-            print(f"[ERROR] 同步表 {table_name} 失败: {str(e)}")
+            printf(f"[ERROR] 同步表 {table_name} 失败: {str(e)}")
             raise
     
     def get_database_type(self) -> str:
         """获取数据库类型，支持多种常见数据库"""
         try:
             dialect = self.engine.dialect.name
-            print(f"[DEBUG] 检测到数据库方言: {dialect}")
+            printf(f"[DEBUG] 检测到数据库方言: {dialect}")
             
             # 支持更多数据库类型
             if dialect == 'sqlite':
@@ -196,10 +200,10 @@ class ModelSync:
             elif dialect == 'mssql':
                 return 'mssql'
             else:
-                print(f"[WARN] 未知数据库方言: {dialect}, 默认使用mysql兼容模式")
+                printf(f"[WARN] 未知数据库方言: {dialect}, 默认使用mysql兼容模式")
                 return 'mysql'
         except Exception as e:
-            print(f"[ERROR] 获取数据库类型失败: {str(e)}")
+            printf(f"[ERROR] 获取数据库类型失败: {str(e)}")
             return 'mysql'  # 默认回退
     
     def _add_column(self, table_name: str, column) -> None:
@@ -230,7 +234,7 @@ class ModelSync:
                         add_sql += " AUTOINCREMENT"
                     elif db_type == 'postgresql':
                         add_sql += " SERIAL"
-                    print(f"[DEBUG] 为主键列 {column.name} 添加自动增长属性")
+                    printf(f"[DEBUG] 为主键列 {column.name} 添加自动增长属性")
                 
                 # 添加默认值设置
                 if default_value is not None:
@@ -242,7 +246,7 @@ class ModelSync:
                 elif column.nullable:
                     add_sql += " DEFAULT NULL"
                 
-                print(f"[DEBUG] 执行ADD COLUMN语句: {add_sql}")
+                printf(f"[SQL] 执行添加列SQL:\n{add_sql}")
                 conn.execute(text(add_sql))
                 
                 # 处理外键约束
@@ -254,16 +258,16 @@ class ModelSync:
                             f"ALTER TABLE {table_name} ADD CONSTRAINT fk_{table_name}_{column.name} " +
                             f"FOREIGN KEY ({column.name}) REFERENCES {ref_table}({ref_column})"
                         )
-                        print(f"[DEBUG] 执行外键约束语句: {fk_sql}")
+                        printf(f"[DEBUG] 执行外键约束语句: {fk_sql}")
                         conn.execute(text(fk_sql))
             except Exception as e:
-                print(f"[WARN] 添加列 {column.name} 失败: {str(e)}")
+                printf(f"[WARN] 添加列 {column.name} 失败: {str(e)}")
                 raise
     
     def _alter_column_sqlite(self, table_name: str, column) -> None:
         """SQLite专用: 通过创建新表并复制数据来修改列，支持默认值"""
         try:
-            print(f"[INFO] 开始修改SQLite表 {table_name} 的列 {column.name}")
+            printf(f"[INFO] 开始修改SQLite表 {table_name} 的列 {column.name}")
             
             with self.engine.begin() as conn:
                 # 1. 获取原表结构
@@ -300,19 +304,24 @@ class ModelSync:
                     column_defs.append(col_def)
                 
                 create_sql = f"CREATE TABLE {temp_table} ({', '.join(column_defs)})"
-                print(f"[DEBUG] SQLite创建表语句: {create_sql}")
+                printf(f"[SQL] 执行SQLite表重建SQL:\n{create_sql}")
                 conn.execute(text(create_sql))
                 
                 # 3. 复制数据
-                conn.execute(text(f"INSERT INTO {temp_table} SELECT * FROM {table_name}"))
+                copy_sql = f"INSERT INTO {temp_table} SELECT * FROM {table_name}"
+                printf(f"[SQL] 执行数据复制SQL:\n{copy_sql}")
+                conn.execute(text(copy_sql))
                 
                 # 4. 删除原表并重命名临时表
-                conn.execute(text(f"DROP TABLE {table_name}"))
-                conn.execute(text(f"ALTER TABLE {temp_table} RENAME TO {table_name}"))
+                drop_sql = f"DROP TABLE {table_name}"
+                rename_sql = f"ALTER TABLE {temp_table} RENAME TO {table_name}"
+                printf(f"[SQL] 执行表清理SQL:\n{drop_sql}\n{rename_sql}")
+                conn.execute(text(drop_sql))
+                conn.execute(text(rename_sql))
                 
-                print(f"[INFO] 成功修改SQLite表 {table_name} 的列 {column.name}")
+                printf(f"[INFO] 成功修改SQLite表 {table_name} 的列 {column.name}")
         except Exception as e:
-            print(f"[ERROR] 修改SQLite列 {column.name} 失败: {str(e)}")
+            printf(f"[ERROR] 修改SQLite列 {column.name} 失败: {str(e)}")
             raise
     
     def _alter_column(self, table_name: str, column) -> None:
@@ -339,15 +348,19 @@ class ModelSync:
                     # 1. 修改列定义
                     modify_sql = f"ALTER TABLE {table_name} MODIFY COLUMN {column.name} {column_type} {nullable}"
                     
-                    # 添加自动增长属性(仅对主键列)
-                    if getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                    # 添加自动增长属性(仅对整数类型的主键列)
+                    if (getattr(column, 'autoincrement', False) and 
+                        getattr(column, 'primary_key', False) and
+                        str(column.type).upper() in ('INT', 'INTEGER', 'BIGINT', 'SMALLINT')):
                         if db_type == 'mysql':
                             modify_sql += " AUTO_INCREMENT"
                         elif db_type == 'sqlite':
                             modify_sql += " AUTOINCREMENT"
                         elif db_type == 'postgresql':
                             modify_sql += " SERIAL"
-                        print(f"[DEBUG] 修改主键列 {column.name} 的自动增长属性")
+                        printf(f"[DEBUG] 修改整数主键列 {column.name} 的自动增长属性")
+                    elif getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                        printf(f"[WARN] 列 {column.name} 是主键但类型不是整数({str(column.type)})，跳过AUTO_INCREMENT设置")
                     
                     # 添加默认值设置
                     if default_value is not None:
@@ -382,10 +395,10 @@ class ModelSync:
                     
                     # 执行所有ALTER语句
                     for sql in alter_sqls:
-                        print(f"[DEBUG] 执行ALTER语句: {sql}")
+                        printf(f"[SQL] 执行修改表SQL:\n{sql}")
                         conn.execute(text(sql))
             except Exception as e:
-                print(f"[WARN] 修改列 {column.name} 失败: {str(e)}")
+                printf(f"[WARN] 修改列 {column.name} 失败: {str(e)}")
                 raise
     
     def _is_same_type(self, db_col, model_col) -> bool:
@@ -412,7 +425,7 @@ class ModelSync:
                     'INT': ['INT', 'INTEGER'],
                     'BIGINT': ['BIGINT'],
                     'VARCHAR': ['VARCHAR', 'CHAR', 'NVARCHAR'],
-                    'TEXT': ['TEXT', 'LONGTEXT', 'MEDIUMTEXT', 'TINYTEXT'],
+                    'TEXT': ['TEXT', 'LONGTEXT', 'MEDIUMTEXT', 'TINYTEXT', 'MEDIUMTEXT'],
                     'DATETIME': ['DATETIME', 'TIMESTAMP'],
                     'FLOAT': ['FLOAT', 'REAL'],
                     'DOUBLE': ['DOUBLE', 'DOUBLE PRECISION'],
@@ -426,17 +439,17 @@ class ModelSync:
                 # SQLite类型系统比较灵活，检查是否属于同一类型组
                 for group, types in type_mapping['sqlite'].items():
                     if db_base_type in types and model_base_type in types:
-                        print(f"[DEBUG] 类型匹配: {db_type} 和 {model_type} 都属于 {group} 组")
+                        printf(f"[DEBUG] 类型匹配: {db_type} 和 {model_type} 都属于 {group} 组")
                         type_match = True
                         break
                 if not type_match:
-                    print(f"[DEBUG] 类型不匹配: {db_type} 和 {model_type} 不属于同一组")
+                    printf(f"[DEBUG] 类型不匹配: {db_type} 和 {model_type} 不属于同一组")
                     return False
             else:
                 # MySQL需要更精确的类型匹配
                 # 忽略长度差异
                 if db_base_type != model_base_type:
-                    print(f"[DEBUG] 基础类型不匹配: {db_base_type} != {model_base_type}")
+                    printf(f"[DEBUG] 基础类型不匹配: {db_base_type} != {model_base_type}")
                     return False
                 
                 # 检查长度是否一致(如果有)
@@ -444,7 +457,7 @@ class ModelSync:
                 model_length = model_type.split('(')[1].split(')')[0] if '(' in model_type else None
                 
                 if db_length and model_length and db_length != model_length:
-                    print(f"[DEBUG] 类型长度不匹配: {db_length} != {model_length}")
+                    printf(f"[DEBUG] 类型长度不匹配: {db_length} != {model_length}")
                     return False
             
             # 2. 检查默认值是否匹配
@@ -457,14 +470,14 @@ class ModelSync:
             
             # 比较默认值
             if db_default != model_default:
-                print(f"[DEBUG] 默认值不匹配: 数据库({db_default}) != 模型({model_default})")
+                printf(f"[DEBUG] 默认值不匹配: 数据库({db_default}) != 模型({model_default})")
                 return False
             
             # 3. 检查主键约束是否匹配
             db_primary = db_col.get('primary_key', False)
             model_primary = model_col.primary_key
             if db_primary != model_primary:
-                print(f"[DEBUG] 主键约束不匹配: 数据库({db_primary}) != 模型({model_primary})")
+                printf(f"[DEBUG] 主键约束不匹配: 数据库({db_primary}) != 模型({model_primary})")
                 return False
                 
             # 4. 检查外键约束是否匹配
@@ -472,7 +485,7 @@ class ModelSync:
             db_foreign = 'foreign_keys' in db_col
             model_foreign = hasattr(model_col, 'foreign_keys') and len(model_col.foreign_keys) > 0
             if db_foreign != model_foreign:
-                print(f"[DEBUG] 外键标记不匹配: 数据库({db_foreign}) != 模型({model_foreign})")
+                printf(f"[DEBUG] 外键标记不匹配: 数据库({db_foreign}) != 模型({model_foreign})")
                 return False
                 
             # 5. 检查自动增长属性是否匹配
@@ -481,12 +494,12 @@ class ModelSync:
             # 只有当列是主键时才比较自动增长属性
             if db_col.get('primary_key', False) or getattr(model_col, 'primary_key', False):
                 if db_autoinc != model_autoinc:
-                    print(f"[DEBUG] 自动增长属性不匹配: 数据库({db_autoinc}) != 模型({model_autoinc})")
+                    printf(f"[DEBUG] 自动增长属性不匹配: 数据库({db_autoinc}) != 模型({model_autoinc})")
                     return False
                 
             return True
         except Exception as e:
-            print(f"[ERROR] 类型/默认值/约束比较失败: {str(e)}")
+            printf(f"[ERROR] 类型/默认值/约束比较失败: {str(e)}")
             return False
     
     def _get_column_type(self, column) -> str:
@@ -495,11 +508,11 @@ class ModelSync:
         type_str = str(column.type)
         
         # 调试日志
-        print(f"[DEBUG] 获取列类型: {column.name} - 原始类型: {type_str}")
+        printf(f"[DEBUG] 获取列类型: {column.name} - 原始类型: {type_str}")
         if hasattr(column, 'autoincrement'):
-            print(f"[DEBUG] 自动增长属性: {column.autoincrement}")
+            printf(f"[DEBUG] 自动增长属性: {column.autoincrement}")
         if hasattr(column, 'primary_key'):
-            print(f"[DEBUG] 主键属性: {column.primary_key}")
+            printf(f"[DEBUG] 主键属性: {column.primary_key}")
         
         # 处理常见的类型差异
         if db_type == 'sqlite':
@@ -508,10 +521,18 @@ class ModelSync:
                 return 'TEXT'
             elif 'DATETIME' in type_str:
                 return 'TEXT'  # SQLite没有专门的DATETIME类型
-        else:
-            # MySQL类型处理
-            if 'TEXT' in type_str and 'VARCHAR' not in type_str:
-                return type_str.replace('TEXT', 'LONGTEXT')
+        elif db_type in ('mysql', 'mariadb'):
+            # MySQL/MariaDB类型处理
+            if 'MEDIUMTEXT' in type_str:
+                return 'MEDIUMTEXT CHARACTER SET utf8mb4'
+            elif 'TEXT' in type_str and 'VARCHAR' not in type_str:
+                return type_str.replace('TEXT', 'LONGTEXT') + ' CHARACTER SET utf8mb4'
+            elif 'VARCHAR' in type_str:
+                # 对于主键或索引列，限制VARCHAR长度为191以避免超出MySQL的key长度限制
+                if getattr(column, 'primary_key', False) or getattr(column, 'index', False):
+                    if 'VARCHAR(255)' in type_str:
+                        return 'VARCHAR(191) CHARACTER SET utf8mb4'
+                return type_str + ' CHARACTER SET utf8mb4'
                 
         return type_str
 
