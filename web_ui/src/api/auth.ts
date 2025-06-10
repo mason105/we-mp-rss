@@ -46,7 +46,7 @@ export const QRCode = () => {
       qrCodeIntervalId = setInterval(() => {
         qrCodeCounter++;
         if(qrCodeCounter > maxAttempts) {
-          clearInterval(qrCodeIntervalId!);
+          clearInterval(qrCodeIntervalId);
           qrCodeIntervalId = 0;
           reject(new Error('获取二维码超时'));
           return;
@@ -54,14 +54,12 @@ export const QRCode = () => {
         axios.head(res?.code).then(response => {
           if(response.status==200){
             console.log(response)
-            clearInterval(qrCodeIntervalId!);
-            qrCodeIntervalId = 0;
+            clearInterval(qrCodeIntervalId);
             resolve(res)
           }
         }).catch(err => {
           if(qrCodeCounter >= maxAttempts) {
-            clearInterval(qrCodeIntervalId!);
-            qrCodeIntervalId = null;
+            clearInterval(qrCodeIntervalId);
             reject(err);
           }
         })
