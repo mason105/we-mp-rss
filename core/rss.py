@@ -60,8 +60,13 @@ class RSS:
     def generate_rss(self,rss_list: dict, title: str = "Mp-We-Rss", 
                     link: str = "https://github.com/rachelos/we-mp-rss",
                     description: str = "RSS频道", language: str = "zh-CN"):
+        from core.config import cfg
+        full_context=bool(cfg.get("rss.full_context",False))
+        
         # 创建根元素(RSS标准)
         rss = ET.Element("rss", version="2.0")
+        if full_context==True:
+            rss.attrib["xmlns:content"] = "http://purl.org/rss/2.0/modules/content/"
         channel=ET.SubElement(rss, "channel")
         # 设置渠道信息
         ET.SubElement(channel, "title").text = title
@@ -70,18 +75,17 @@ class RSS:
         ET.SubElement(channel, "language").text = language
         ET.SubElement(channel, "generator").text = "Mp-We-Rss"
         ET.SubElement(channel, "lastBuildDate").text =datetime.now().strftime("%a, %d %b %Y %H:%M:%S %z")
-        from core.config import cfg
-        full_context=bool(cfg.get("rss.full_context",False))
+    
         for rss_item in rss_list:
             item = ET.SubElement(channel, "item")
             ET.SubElement(item, "id").text = rss_item["id"]
             ET.SubElement(item, "title").text = rss_item["title"]
             ET.SubElement(item, "description").text = rss_item["description"] 
             ET.SubElement(item, "guid").text = rss_item["link"]
-            if full_context==True :
+            if full_context==True:
                 try:
-                    content = str(rss_item["content"])  # 确保 content 是字符串类型
-                    ET.SubElement(item, "{http://purl.org/rss/2.0/modules/content/}encoded").text = content
+                    content = f"<![CDATA[{str(rss_item['content'])}]]>"  # 使用CDATA包裹内容
+                    ET.SubElement(item, "content:encoded").text = content
                 except Exception as e:
                     print(f"Error adding content:encoded element: {e}")
                 pass

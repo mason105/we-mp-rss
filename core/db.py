@@ -70,14 +70,14 @@ class Db:
                 art.updated_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             art.created_at=datetime.strptime(art.created_at ,'%Y-%m-%d %H:%M:%S')
             art.updated_at=datetime.strptime(art.updated_at,'%Y-%m-%d %H:%M:%S')
-            art.content=str(art.content)
+            art.content=art.content
             from core.models.base import DATA_STATUS
             art.status=DATA_STATUS.ACTIVE
             session.add(art) 
             # self._session.merge(art)
             session.commit()
         except Exception as e:
-            if "UNIQUE" in str(e):
+            if "UNIQUE" in str(e) or "Duplicate entry" in str(e):
                 print_warning(f"Article already exists: {art.id}")
             else:
                 print_error(f"Failed to add article: {e}")
