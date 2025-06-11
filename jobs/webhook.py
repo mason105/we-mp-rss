@@ -110,7 +110,8 @@ def web_hook(hook:MessageWebHook):
         # 处理articles参数，兼容Article对象和字典类型
         processed_articles = []
         if len(hook.articles)<=0:
-            raise ValueError("没有更新到文章")
+            # raise ValueError("没有更新到文章")
+            logger.warning("没有更新到文章")
             return 
         for article in hook.articles:
             if isinstance(article, dict):

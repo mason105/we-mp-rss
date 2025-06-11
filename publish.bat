@@ -33,8 +33,13 @@ if %WEB_FLAG%==1 (
 
 REM 读取Python配置文件中的版本号
 for /f "tokens=1 delims==" %%v in ('python -c "from core.ver import VERSION; print(VERSION)"') do set VERSION=%%v
-set tag="v%VERSION%"
+if "%VERSION%"=="" (
+    echo 错误：无法从core.ver.py读取版本号
+    exit /b 1
+)
+set tag=v%VERSION%
 echo 当前版本: %VERSION% TAG: %tag%
+
 
 REM 设置comment
 if %COMMENT_FLAG%==1 (
@@ -45,13 +50,13 @@ if %COMMENT_FLAG%==1 (
     if exist %version_file% (
         for /f "usebackq delims=" %%a in (%version_file%) do set comment=%%a
     ) else (
-        echo 警告：未找到对应版本号的文件 %version_file%
+        echo "警告：未找到对应版本号的文件%version_file%"
     )
 )
 
-echo %comment%
+echo "%comment%"
 git add .
-git tag  "v%VERSION%"
+git tag -a "v%VERSION%" -m "%VERSION% %comment%"
 git commit -m "%VERSION% %comment%"
 
 REM 执行git操作
@@ -60,4 +65,4 @@ if %PUSH_FLAG%==1 (
     git push origin  %tag%
     git push -u gitee main
     git push gitee  %tag%
-) 
+)

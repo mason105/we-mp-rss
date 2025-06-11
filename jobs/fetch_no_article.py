@@ -2,6 +2,7 @@ from core.models.article import Article
 from core.db import DB
 from core.wx.base import WxGather
 from time import sleep
+from core.print import print_success,print_error
 import random
 def fetch_articles_without_content():
     """
@@ -24,24 +25,21 @@ def fetch_articles_without_content():
             else:
                 url = f"https://mp.weixin.qq.com/s/{article.id}"
             
-            print(f"正在处理文章: {article.id}, URL: {url}")
+            print(f"正在处理文章: {article.title}, URL: {url}")
             
             # 获取内容
             content = ga.content_extract(url)
-            sleep(random.randint(1,5))
+            sleep(random.randint(3,10))
             if content:
                 # 更新内容
                 article.content = content
                 session.commit()
-                print(f"成功更新文章 {article.title} 的内容")
+                print_success(f"成功更新文章 {article.title} 的内容")
             else:
-                print(f"获取文章 {article.title} 内容失败")
+                print_error(f"获取文章 {article.title} 内容失败")
                 
     except Exception as e:
         print(f"处理过程中发生错误: {e}")
-        session.rollback()
-    finally:
-        session.close()
 from core.task import TaskScheduler
 scheduler=TaskScheduler()
 from core.config import cfg

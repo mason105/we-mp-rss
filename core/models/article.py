@@ -6,7 +6,7 @@ class Article(Base):
     title = Column(String(500))
     pic_url = Column(String(500))
     url=Column(String(500))
-    content = Column(MEDIUMTEXT)
+    content = Column(Text)
     description=Column(String(800))
     status = Column(Integer,default=1)
     publish_time = Column(Integer)

@@ -6,39 +6,42 @@ import yaml
 import re
 from bs4 import BeautifulSoup
 from .base import WxGather
-
+from core.log import logger
 # 继承 BaseGather 类
 class MpsWeb(WxGather):
 
     # 重写 content_extract 方法
     def content_extract(self,  url):
-        session=self.session
-        r = session.get(url, headers=self.headers)
-        if r.status_code == 200:
-            text = r.text
-            if text is None:
-                return
-            soup = BeautifulSoup(text, 'html.parser')
-            # 找到内容
-            js_content_div = soup.find('div', {'id': 'js_content'})
-            # 移除style属性中的visibility: hidden;
-            if js_content_div is None:
-                return
-            js_content_div.attrs.pop('style', None)
-            # 找到所有的img标签
-            img_tags = js_content_div.find_all('img')
-            # 遍历每个img标签并修改属性，设置宽度为1080p
-            for img_tag in img_tags:
-                if 'data-src' in img_tag.attrs:
-                    img_tag['src'] = img_tag['data-src']
-                    del img_tag['data-src']
-                if 'style' in img_tag.attrs:
-                    style = img_tag['style']
-                    # 使用正则表达式替换width属性
-                    style = re.sub(r'width\s*:\s*\d+\s*px', 'width: 1080px', style)
-                    img_tag['style'] = style
-            return  js_content_div.prettify()
-        return None
+        try:
+            session=self.session
+            r = session.get(url, headers=self.headers)
+            if r.status_code == 200:
+                text = r.text
+                if text is None:
+                    return
+                soup = BeautifulSoup(text, 'html.parser')
+                # 找到内容
+                js_content_div = soup.find('div', {'id': 'js_content'})
+                # 移除style属性中的visibility: hidden;
+                if js_content_div is None:
+                    return
+                js_content_div.attrs.pop('style', None)
+                # 找到所有的img标签
+                img_tags = js_content_div.find_all('img')
+                # 遍历每个img标签并修改属性，设置宽度为1080p
+                for img_tag in img_tags:
+                    if 'data-src' in img_tag.attrs:
+                        img_tag['src'] = img_tag['data-src']
+                        del img_tag['data-src']
+                    if 'style' in img_tag.attrs:
+                        style = img_tag['style']
+                        # 使用正则表达式替换width属性
+                        style = re.sub(r'width\s*:\s*\d+\s*px', 'width: 1080px', style)
+                        img_tag['style'] = style
+                return  js_content_div.prettify()
+        except Exception as e:
+                logger.error(e)
+        return ""
     # 重写 get_Articles 方法
     def get_Articles(self, faker_id:str=None,Mps_id:str=None,Mps_title="",CallBack=None,begin:int=0,MaxPage:int=1,interval=1,Gather_Content=False,Item_Over_CallBack=None,Over_CallBack=None):
         super().Start(mp_id=Mps_id)
