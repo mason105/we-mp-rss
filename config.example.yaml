@@ -59,6 +59,10 @@ gather:
   content: ${GATHER.CONTENT:-True}
   #采集模式，web模式（可采集到发布链接)，api模式（可采集临时链接）
   model: ${GATHER.MODEL:-web}
+  #是否自动检查未采集文章内容，默认False
+  content_auto_check: ${GATHER.CONTENT_AUTO_CHECK:-False}
+  #自动检查未采集文章内容的时间间隔 单位秒默认59分钟 允许值 1-59分钟之间 默认59分钟
+  content_auto_interval: ${GATHER.CONTENT_AUTO_INTERVAL:-59}
 log:
   #日志文件路径，默认为空字符串，表示不输出到文件。如果要输出到文件，可以指定一个路径如：/var/log/we-mp-rss.log 如果为空就不纪录
    file: ${LOG_FILE:-}

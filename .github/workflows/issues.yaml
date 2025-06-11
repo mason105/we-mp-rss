@@ -1,4 +1,6 @@
 name: Issue Reply
+permissions:
+  issues: write
 on:
   issues:
     types: [labeled]

@@ -71,6 +71,10 @@ def get_feeds(task:MessageTask=None):
      return mps
 scheduler=TaskScheduler()
 def start_job():
+    #开启自动同步未同步 文章任务
+    from jobs.fetch_no_article import start_sync_content
+    start_sync_content()
+
     from .taskmsg import get_message_task
     tasks=get_message_task()
     if not tasks:
