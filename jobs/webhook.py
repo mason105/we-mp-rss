@@ -5,7 +5,7 @@ from core.notice import notice
 from dataclasses import dataclass
 from core.lax import TemplateParser
 from datetime import datetime
-
+from core.log import logger
 @dataclass
 class MessageWebHook:
     task: MessageTask
@@ -78,8 +78,8 @@ def call_webhook(hook: MessageWebHook) -> str:
     
     # 检查web_hook_url是否为空
     if not hook.task.web_hook_url:
-        raise ValueError("Webhook URL不能为空")
-        
+        logger.error("web_hook_url为空")
+        return 
     # 发送webhook请求
     import requests
     try:
