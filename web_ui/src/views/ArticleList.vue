@@ -234,6 +234,14 @@ const columns = [
     )
   },
   {
+    title: '是否有正文',
+    width: '8%',
+    render: ({ record }) => h('span', 
+      { style: { color: 'var(--color-text-3)', fontSize: '12px' } },
+      record.content && record.content.trim() ? '是' : '否'
+    )
+  },
+  {
     title: '操作',
     dataIndex: 'actions',
     width: '120px',

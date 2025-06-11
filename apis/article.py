@@ -5,6 +5,7 @@ from core.models.base import DATA_STATUS
 from core.models.article import Article
 from sqlalchemy import and_, or_
 from .base import success_response, error_response
+from core.config import cfg
 router = APIRouter(prefix=f"/articles", tags=["文章管理"])
 @router.api_route("", summary="获取文章列表",methods= ["GET", "POST"], operation_id="get_articles_list")
 async def get_articles(
@@ -129,6 +130,8 @@ async def delete_article(
             )
         # 逻辑删除文章（更新状态为deleted）
         article.status = DATA_STATUS.DELETED
+        if cfg.get("article.true_delete", False):
+            session.delete(article)
         session.commit()
         
         return success_response(None, message="文章已标记为删除")
