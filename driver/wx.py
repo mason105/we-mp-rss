@@ -9,7 +9,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 import time
 import os
 import re
-from threading import Thread
 from threading import Timer
 from .cookies import expire
 import json
@@ -65,18 +64,25 @@ class Wx:
         except Exception as e:
             print(f"提取token时出错: {str(e)}")
             return None
+       
     def GetCode(self,CallBack=None):
         if  self.isLock():
-            return {"code":self.wx_login_url,"msg":"微信公众平台登录脚本正在运行，请勿重复运行！"}
+            return {
+                "code":f"{self.wx_login_url}?t={(time.time())}",
+                "msg":"微信公众平台登录脚本正在运行，请勿重复运行！"}
+       
+        self.Clean()
         print("子线程执行中")
-        self.thread = Thread(target=self.wxLogin,args=(CallBack,))  # 传入函数名
+        from core.thread import ThreadManager
+        self.thread = ThreadManager(target=self.wxLogin)  # 传入函数名
         self.thread.start()  # 启动线程
         print("微信公众平台登录 v1.34")
         return WX_API.QRcode()
-    wait_time=100
+    
+    wait_time=1
     def QRcode(self):
         return {
-            "code":self.wx_login_url
+            "code":f"{self.wx_login_url}?t={(time.time())}"
         }
     def refresh_task(self):
         try:
@@ -191,7 +197,7 @@ class Wx:
             wait.until(EC.url_contains(self.WX_HOME))
             self.CallBack=CallBack
             self.Call_Success()
-            self.schedule_refresh(interval=refresh_interval)
+           
         except NameError as e:
             # 修正此处，确保异常处理逻辑正确
             print_error(f"\n错误发生: {str(e)}")
@@ -201,12 +207,16 @@ class Wx:
             print(f"\n错误发生: {str(e)}")
             print("可能的原因:\n1. 请确保已安装Firefox浏览器\n2. 请确保geckodriver已下载并配置到PATH中\n3. 检查网络连接是否可以访问微信公众平台")
             self.SESSION=None
+            self.Clean()
             self.Close()
         finally:
             self.isLOCK=False
             if 'controller' in locals() and NeedExit:
                 self.Clean()
                 controller.close()
+            else:
+                # self.schedule_refresh(interval=refresh_interval)
+                pass
         return self.SESSION
     def format_token(self,cookies:any,token=""):
         cookies_str=""

@@ -132,8 +132,12 @@ class WxGather:
         if CallBack is not None:
             CallBack(item)
         pass
-    def Error(self,error:str):
+    def Error(self,error:str,code=None):
         self.Over()
+        if code=="Invalid Session":
+            from jobs.notice import send_wx_code
+            send_wx_code(f"公众号平台登录失效,请重新登录")
+            pass
         raise Exception(error)
     def Over(self,CallBack=None):
         if getattr(self, 'articles', None) is not None:

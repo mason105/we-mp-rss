@@ -13,3 +13,6 @@ def sys_notice(text:str="",title:str=""):
     if len(wechat_webhook)>0:
         notice(wechat_webhook, title, markdown_text)
 
+def send_wx_code(title:str="",url:str=""):
+    sys_notice(f"[二维码]：({url})", "微信授权")
+    pass

@@ -85,7 +85,7 @@ class MpsWeb(WxGather):
                     break
                 
                 if msg['base_resp']['ret'] == 200003:
-                    super().Error("Invalid Session, stop at {}".format(str(begin)))
+                    super().Error("Invalid Session, stop at {}".format(str(begin)),code="Invalid Session")
                     break
                 if msg['base_resp']['ret'] != 0:
                     super().Error("错误原因:{}:代码:{}".format(msg['base_resp']['err_msg'],msg['base_resp']['ret']))

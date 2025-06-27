@@ -87,7 +87,7 @@ class MpsApi(WxGather):
                     break
                 
                 if msg['base_resp']['ret'] == 200003:
-                    super().Error("Invalid Session, stop at {}".format(str(begin)))
+                    super().Error("Invalid Session, stop at {}".format(str(begin)),code="Invalid Session")
                     break
                 
                 # 如果返回的内容中为空则结束
