@@ -1,7 +1,7 @@
 <template>
   <a-layout class="app-container">
     <!-- 头部 -->
-    <a-layout-header class="app-header">
+    <a-layout-header class="app-header" v-if="route.path !== '/login'">
       <div class="header-left">
         <div class="logo">
           <img  :src="logo" alt="avatar" :width="60" style="margin-right:1rem;">
@@ -191,7 +191,7 @@ watch(
 }
 
 .app-content {
-  padding: 20px;
+  /* padding: 20px; */
   background: var(--color-bg-1);
   min-height: calc(100vh - 64px);
 }

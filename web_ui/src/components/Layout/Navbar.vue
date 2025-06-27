@@ -21,7 +21,7 @@
         <template #icon>
           <icon-settings />
         </template>
-        配置管理
+        配置信息
       </a-menu-item>
       <a-menu-item key="/sys-info">
         <template #icon>

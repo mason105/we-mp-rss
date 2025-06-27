@@ -4,15 +4,14 @@
     <a-layout-sider :width=380
       :style="{ background: '#fff', padding: '0', borderRight: '1px solid #eee', display: 'flex', flexDirection: 'column' }">
       <a-card :bordered="false" title="公众号"
-        :headStyle="{ padding: '12px 16px', borderBottom: '1px solid #eee', position: 'fixed', top: 0, background: '#fff', zIndex: 1 }">
+        :headStyle="{ padding: '12px 16px', borderBottom: '1px solid #eee', background: '#fff', zIndex: 1 }">
         <template #extra>
           <a-button type="primary" @click="showAddModal">
             <template #icon><icon-plus /></template>
             添加订阅
           </a-button>
         </template>
-        <div style="display: flex; flex-direction: column; height: calc(100vh - 150px); background: #fff">
-          <div style="flex: 1; overflow: auto">
+        <div style="display: flex; flex-direction: column;; background: #fff">
             <a-list :data="mpList" :loading="mpLoading" bordered>
               <template #item="{ item, index }">
                 <a-list-item @click="handleMpClick(item.id)" :class="{ 'active-mp': activeMpId === item.id }"
@@ -29,13 +28,10 @@
                 </a-list-item>
               </template>
             </a-list>
-          </div>
-          <div style="padding: 12px 16px; border-top: 1px solid #eee; background: #fff">
-            <a-pagination v-model:current="mpPagination.current" v-model:page-size="mpPagination.pageSize"
+            <a-pagination v-model:current="mpPagination.current" v-model:page-size="mpPagination.pageSize" style="margin-top: 1rem;"
               :total="mpPagination.total" :page-size-options="mpPagination.pageSizeOptions"
               jump-next jump-prev show-quick-jumper :show-size-changer="true" size="small" show-total="true"
               @change="handleMpPageChange" />
-          </div>
         </div>
       </a-card>
     </a-layout-sider>
@@ -446,11 +442,11 @@ const deleteMp = async (mpId: string) => {
 
 <style scoped>
 .article-list {
-  /* height: calc(100vh - 164px); */
+  /* height: calc(100vh - 186px); */
 }
 
 .a-layout-sider {
-  overflow: auto;
+  overflow: hidden;
 }
 
 .a-list-item {

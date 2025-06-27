@@ -36,8 +36,31 @@ class ConfigManager:
         return self._convert_to_nested_dict(config)
         
     def _store_single_config(self, key, value, description=""):
-        """存储单个配置项到数据库"""
+        """存储单个配置项到数据库
+        
+        Args:
+            key: 配置项键名
+            value: 配置项值
+            description: 配置项描述，会自动处理：
+                - 去除前后空格
+                - 空描述时使用默认值
+                - 转义特殊字符
+                - 限制长度(255字符)
+        """
         try:
+            # 处理description
+            if not description or not description.strip():
+                description = "系统配置项" if "." not in key else f"{key.split('.')[0]}配置的子项"
+            
+            # 清理description
+            description = description.strip()
+            
+            # 转义特殊字符
+            description = description.replace("'", "''").replace('"', '""')
+            
+            # 限制长度
+            description = description[:255]
+            
             db.get_session().merge(ConfigManagement(
                 config_key=key,
                 config_value=str(value) if value is not None else '',
