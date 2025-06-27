@@ -13,6 +13,7 @@
       </div>
       <div class="header-right" v-if="hasLogined">
         <a-link href="/api/docs" target="_blank" style="margin-right: 20px;">Docs</a-link>
+        <a-link href="https://gitee.com/rachel_os/we-mp-rss" target="_blank" style="margin-right: 20px;">Gitee</a-link>
         <a-link href="https://github.com/rachelos/we-mp-rss" target="_blank" style="margin-right: 20px;">GitHub</a-link>
         <a-dropdown position="br" trigger="click">
           <div class="user-info">
@@ -50,11 +51,7 @@
       <!-- 主内容区 -->
       <a-layout>
         <a-layout-content class="app-content">
-          <router-view v-slot="{ Component }">
-            <transition name="fade" mode="out-in">
-              <component :is="Component" />
-            </transition>
-          </router-view>
+          <router-view />
         </a-layout-content>
       </a-layout>
     </a-layout>

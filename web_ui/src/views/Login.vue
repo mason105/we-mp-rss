@@ -4,14 +4,14 @@
       <!-- 左侧介绍区域 -->
       <div class="login-left">
         <div class="login-intro">
-          <h1 class="intro-title">WeRSS - 微信公众号订阅助手</h1>
+          <h1 class="intro-title">{{appTitle}}</h1>
           <p class="intro-text">
             一个用于订阅和管理微信公众号内容的工具，提供RSS订阅功能
           </p>
           <div class="login-features">
             <div class="feature-item">
               <icon-check-circle />
-              <span>微信公众号内容抓取和解析</span>
+              <span>公众号内容抓取和解析</span>
             </div>
             <div class="feature-item">
               <icon-check-circle />
@@ -20,6 +20,10 @@
             <div class="feature-item">
               <icon-check-circle />
               <span>定时自动更新内容</span>
+            </div>
+            <div class="feature-item">
+              <icon-check-circle />
+              <span>公众号监测、消息通知、WebHook调用 </span>
             </div>
           </div>
         </div>
@@ -50,6 +54,16 @@
         </a-card>
       </div>
     </div>
+    <div class="login-footer">
+      <div class="copyright">Design By Rachel</div>
+      <div class="footer-links">
+        <a-link href="https://github.com/rachelos/we-mp-rss" target="_blank">GitHub</a-link>
+        <span class="divider">|</span>
+        <a-link href="https://gitee.com/rachel_os/we-mp-rss" target="_blank">Gitee</a-link>
+        <span class="divider">|</span>
+        <a-link href="/api/docs" target="_blank">Docs</a-link>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -59,7 +73,7 @@ import { useRouter } from 'vue-router'
 import { Message } from '@arco-design/web-vue'
 import { login } from '@/api/auth'
 
-const appTitle = computed(() => import.meta.env.VITE_APP_LOGIN_TITLE || '登录')
+const appTitle = computed(() => import.meta.env.VITE_APP_TITLE || '微信公众号订阅助手')
 
 const router = useRouter()
 const loading = ref(false)
@@ -114,6 +128,21 @@ const handleSubmit = async () => {
   height: 100vh;
   padding: 0;
   margin: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(168, 85, 247, 0.9) 100%);
+  background-size: 200% 200%;
+  animation: gradientBG 12s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .login-layout {
@@ -122,8 +151,15 @@ const handleSubmit = async () => {
   transition: all 0.3s ease;
 }
 
-.login-container {
-  background: linear-gradient(90deg, #3b82f6 0%, #f0f4f8 100%);
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-left {
@@ -134,6 +170,35 @@ const handleSubmit = async () => {
   flex-direction: column;
   justify-content: center;
   background: transparent;
+}
+
+.intro-title {
+  animation: fadeInUp 0.8s ease-out both;
+}
+
+.intro-text {
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.feature-item {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.feature-item:nth-child(1) {
+  animation-delay: 0.4s;
+}
+
+.feature-item:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.feature-item:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+.feature-item:nth-child(4) {
+  animation-delay: 0.7s;
 }
 
 .login-right {
@@ -164,6 +229,7 @@ const handleSubmit = async () => {
   font-size: 2.5rem;
   margin-bottom: 24px;
   font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .intro-text {
@@ -171,6 +237,7 @@ const handleSubmit = async () => {
   line-height: 1.6;
   margin-bottom: 32px;
   opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .login-features {
@@ -184,6 +251,7 @@ const handleSubmit = async () => {
   align-items: center;
   gap: 12px;
   font-size: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .login-ad {
@@ -204,6 +272,12 @@ const handleSubmit = async () => {
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   border: none;
+  transition: all 0.3s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15) !important;
 }
 
 :deep(.arco-form-item-label) {
@@ -322,29 +396,106 @@ const handleSubmit = async () => {
 }
 
 .login-footer {
-  margin-top: 24px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   text-align: center;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
+  padding: 24px 0;
+  color: #fff;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 10;
 }
 
 .login-footer a {
-  color: #4299e1;
+  color: #fff;
   text-decoration: none;
   transition: all 0.2s ease;
   font-size: 0.875rem;
   font-weight: 500;
-  margin: 0 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .login-footer a:hover {
-  color: #3182ce;
-  text-decoration: underline;
+  color: #fff;
+  background: rgba(66, 153, 225, 0.1);
+  transform: translateY(-1px);
+  text-decoration: none;
 }
 
-.login-footer .divider {
-  color: #cbd5e0;
+.copyright {
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copyright::before {
+  content: "©";
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.divider {
   user-select: none;
+}
+
+.login-footer a {
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.login-footer a:hover {
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.login-footer a:active {
+  transform: translateY(0);
+}
+
+.login-footer a::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.login-footer a[href*="github"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E");
+}
+
+.login-footer a[href*="gitee"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.63c0 .327.266.592.593.592h5.63c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.15a.592.592 0 0 1-.592-.592v-1.482a.593.593 0 0 1 .593-.592h6.815c.327 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H5.926a.593.593 0 0 1-.593-.593V9.778a4.444 4.444 0 0 1 4.445-4.444h8.296z'/%3E%3C/svg%3E");
+}
+
+.login-footer a[href*="docs"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 4h7v5h5v11H6V4zm8 18v-1h4v1h-4zm-3 0v-1h1v1h-1zm-2 0v-1h1v1h-1zm-2 0v-1h1v1H7z'/%3E%3C/svg%3E");
 }
 
 @media (max-width: 992px) {
@@ -358,7 +509,17 @@ const handleSubmit = async () => {
     padding: 40px;
   }
   
+  .login-card {
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .intro-title {
+    font-size: 2rem;
+  }
+  
   .login-ad {
+    display: none;
   }
 }
 </style>

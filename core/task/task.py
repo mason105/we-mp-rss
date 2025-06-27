@@ -130,13 +130,21 @@ class TaskScheduler:
     
     def clear_all_jobs(self) -> int:
         """
-        清除所有任务
+        清除所有任务，包括正在运行的任务
         
         :return: 被删除的任务数量
         """
         with self._lock:
             job_count = len(self._jobs)
             if job_count > 0:
+                # 先终止所有正在运行的任务
+                for job in self._scheduler.get_jobs():
+                    try:
+                        self._scheduler.remove_job(job.id)
+                    except Exception as e:
+                        logger.warning(f"Failed to remove job {job.id}: {str(e)}")
+                
+                # 清除所有计划任务
                 self._scheduler.remove_all_jobs()
                 self._jobs.clear()
                 logger.info(f"Removed all {job_count} jobs")

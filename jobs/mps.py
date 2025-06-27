@@ -56,9 +56,8 @@ def do_job(mps:list[Feed]=None,task:MessageTask=None):
                 print_success(f"任务[{item.mp_name}]执行成功,{count}成功条数")
         print_success(f"所有公众号更新完成,共更新{all_count}条数据")
 
-
+from core.queue import TaskQueue
 def add_job(feeds:list[Feed]=None,task:MessageTask=None):
-    from core.queue import TaskQueue
     TaskQueue.add_task(do_job,feeds,task)
     print_success(TaskQueue.get_queue_info())
     pass
@@ -74,6 +73,7 @@ scheduler=TaskScheduler()
 def reload_job():
     print_success("重载任务")
     scheduler.clear_all_jobs()
+    TaskQueue.clear_queue()
     start_job()
 
 def start_job():
