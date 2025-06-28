@@ -12,7 +12,7 @@ import re
 from threading import Timer
 from .cookies import expire
 import json
-from core.print import print_error
+from core.print import print_error,print_warning,print_info,print_success
 class Wx:
     HasLogin=False
     SESSION=None
@@ -65,8 +65,10 @@ class Wx:
             print(f"提取token时出错: {str(e)}")
             return None
        
-    def GetCode(self,CallBack=None):
+    def GetCode(self,CallBack=None,Notice=None):
+        self.Notice=Notice
         if  self.isLock():
+            print_warning("微信公众平台登录脚本正在运行，请勿重复运行")
             return {
                 "code":f"{self.wx_login_url}?t={(time.time())}",
                 "msg":"微信公众平台登录脚本正在运行，请勿重复运行！"}
@@ -119,10 +121,6 @@ class Wx:
                     return size>364
                 except Exception as e:
                     print(f"二维码图片获取失败: {str(e)}")
-                    return False
-            else:
-                print("二维码图片不存在，请重新获取")
-                return False
         return self.isLock
     def wxLogin(self,CallBack=None,NeedExit=False, refresh_interval=3660*24):
         """
@@ -193,6 +191,8 @@ class Wx:
                 raise Exception("二维码图片获取失败，请重新扫码")
             # 等待登录成功（检测二维码图片加载完成）
             print("等待扫码登录...")
+            if self.Notice is not None:
+                self.Notice(self.SESSION)
             wait = WebDriverWait(controller.driver, 120)
             wait.until(EC.url_contains(self.WX_HOME))
             self.CallBack=CallBack
@@ -249,6 +249,7 @@ class Wx:
         self.SESSION=self.format_token(cookies,token)
         self.HasLogin=True
         self.Clean()
+        
         # print(cookie_expiry)
         if self.CallBack is not None:
             self.CallBack(self.SESSION)

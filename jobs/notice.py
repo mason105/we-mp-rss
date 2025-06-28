@@ -13,6 +13,10 @@ def sys_notice(text:str="",title:str=""):
     if len(wechat_webhook)>0:
         notice(wechat_webhook, title, markdown_text)
 
+from driver.wx import WX_API
 def send_wx_code(title:str="",url:str=""):
-    sys_notice(f"[二维码]：({url})", "微信授权")
+    WX_API.GetCode(Notice=CallBackNotice)
     pass
+def CallBackNotice():
+        url=WX_API.QRcode()['code']
+        sys_notice(f"[二维码]：({str(url)})", "微信授权")
