@@ -33,6 +33,7 @@ class WxGather:
         self.get_token()
     def get_token(self):
         cfg.reload()
+        wx_cfg.reload()
         self.Gather_Content=cfg.get('gather.content',False)
         self.user_agent = cfg.get('user_agent', '')
         self.cookies = wx_cfg.get('cookie', '')

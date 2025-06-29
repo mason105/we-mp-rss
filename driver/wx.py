@@ -21,6 +21,14 @@ class Wx:
     WX_LOGIN="https://mp.weixin.qq.com/"
     WX_HOME="https://mp.weixin.qq.com/cgi-bin/home"
     wx_login_url="static/wx_qrcode.png"
+    lock_file_path="data/.lock"
+    def __init__(self):
+        self.lock_path=os.path.dirname(self.lock_file_path)
+        self.refresh_interval=3660*24
+        if not os.path.exists(self.lock_path):
+            os.makedirs(self.lock_path)
+        pass
+
     def check_dependencies(self):
         """检查必要的依赖包"""
         try:
@@ -67,7 +75,7 @@ class Wx:
        
     def GetCode(self,CallBack=None,Notice=None):
         self.Notice=Notice
-        if  self.isLock():
+        if  self.check_lock():
             print_warning("微信公众平台登录脚本正在运行，请勿重复运行")
             return {
                 "code":f"{self.wx_login_url}?t={(time.time())}",
@@ -76,7 +84,7 @@ class Wx:
         self.Clean()
         print("子线程执行中")
         from core.thread import ThreadManager
-        self.thread = ThreadManager(target=self.wxLogin)  # 传入函数名
+        self.thread = ThreadManager(target=self.wxLogin,args=(CallBack,True))  # 传入函数名
         self.thread.start()  # 启动线程
         print("微信公众平台登录 v1.34")
         return WX_API.QRcode()
@@ -97,13 +105,13 @@ class Wx:
         except Exception as e:
             raise Exception(f"浏览器关闭")  # 重新抛出异常以便外部捕获处理
 
-    def schedule_refresh(self,interval=60):
-        if interval <= 0:
+    def schedule_refresh(self):
+        if self.refresh_interval <= 0:
             return
         if self.HasLogin:
             try:
                 self.refresh_task()
-                Timer(interval, self.schedule_refresh).start()
+                Timer(self.refresh_interval, self.schedule_refresh).start()
             except Exception as e:
                 raise Exception(f"浏览器已经关闭")
     def Token(self):
@@ -122,7 +130,7 @@ class Wx:
                 except Exception as e:
                     print(f"二维码图片获取失败: {str(e)}")
         return self.isLock
-    def wxLogin(self,CallBack=None,NeedExit=False, refresh_interval=3660*24):
+    def wxLogin(self,CallBack=None,NeedExit=False):
         """
         微信公众平台登录流程：
         1. 检查依赖和环境
@@ -137,10 +145,10 @@ class Wx:
             return None
         
         try:
-            if  self.isLOCK:
+            if  self.check_lock():
                 return "微信公众平台登录脚本正在运行，请勿重复运行！"
+            self.set_lock()
             self.HasLogin=False
-            self.isLOCK=True
             self.Clean()
             self.Close()
             # 初始化浏览器控制器
@@ -192,7 +200,7 @@ class Wx:
             # 等待登录成功（检测二维码图片加载完成）
             print("等待扫码登录...")
             if self.Notice is not None:
-                self.Notice(self.SESSION)
+                self.Notice()
             wait = WebDriverWait(controller.driver, 120)
             wait.until(EC.url_contains(self.WX_HOME))
             self.CallBack=CallBack
@@ -210,12 +218,12 @@ class Wx:
             self.Clean()
             self.Close()
         finally:
-            self.isLOCK=False
+            self.release_lock()
             if 'controller' in locals() and NeedExit:
                 self.Clean()
-                controller.close()
+                self.Close()
             else:
-                # self.schedule_refresh(interval=refresh_interval)
+                # self.schedule_refresh()
                 pass
         return self.SESSION
     def format_token(self,cookies:any,token=""):
@@ -265,6 +273,7 @@ class Wx:
             pass
         return rel
     def Clean(self):
+        self.release_lock()
         try:
             os.remove(self.wx_login_url)
         except:
@@ -284,8 +293,28 @@ class Wx:
         except Exception as e:
             print(f"设置cookie过期时出错: {str(e)}")
             return False
+            
+    def check_lock(self):
+        """检查锁定状态"""
+        return os.path.exists(self.lock_file_path)
+        
+    def set_lock(self):
+        """创建锁定文件"""
+        with open(self.lock_file_path, 'w') as f:
+            f.write(str(time.time()))
+        self.isLOCK = True
+        
+    def release_lock(self):
+        """删除锁定文件"""
+        try:
+            os.remove(self.lock_file_path)
+            self.isLOCK = False
+            return True
+        except:
+            return False
 
 def DoSuccess(cookies:any) -> dict:
     data=WX_API.format_token(cookies)
     Success(data)
 WX_API = Wx()
+WX_API.Clean()

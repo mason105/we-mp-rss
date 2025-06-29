@@ -52,7 +52,7 @@ async def update_rss_feeds(
 @router.get("", summary="获取RSS订阅列表")
 async def get_rss_feeds(
     request: Request,
-    limit: int = Query(100, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=30),
     offset: int = Query(0, ge=0),
     is_update:bool=False,
     # current_user: dict = Depends(get_current_user)
@@ -167,7 +167,7 @@ async def update_rss_feeds(
 async def get_mp_articles_rss(
     request: Request,
     feed_id: str,
-    limit: int = Query(100, ge=1, le=100),
+    limit: int = Query(10, ge=1, le=30),
     offset: int = Query(0, ge=0),
     is_update:bool=False
     # current_user: dict = Depends(get_current_user)

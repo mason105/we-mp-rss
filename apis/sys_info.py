@@ -5,7 +5,8 @@ from fastapi import APIRouter,Depends
 from typing import Dict, Any
 from core.auth import get_current_user
 from .base import success_response, error_response
-
+from driver.token import wx_cfg
+from jobs.mps import TaskQueue
 router = APIRouter(prefix="/sys", tags=["系统信息"])
 
 # 记录服务器启动时间
@@ -44,7 +45,12 @@ async def get_system_info(
             'api_version': API_VERSION,
             'core_version': CORE_VERSION,
             'latest_version':LATEST_VERSION,
-            'need_update':CORE_VERSION != LATEST_VERSION
+            'need_update':CORE_VERSION != LATEST_VERSION,
+            'wx':{
+                'token':wx_cfg.get('token',''),
+                'expiry_time':wx_cfg.get('expiry.expiry_time',''),
+            },
+            'queue':TaskQueue.get_queue_info(),
         }
         return success_response(data=system_info)
     except Exception as e:

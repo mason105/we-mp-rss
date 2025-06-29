@@ -9,6 +9,7 @@ def set_token(data:any):
     wx_cfg.set("cookie", data.get("cookies_str", ""))
     wx_cfg.set("expiry", data.get("expiry", {}))
     wx_cfg.save_config()
+    wx_cfg.reload()
     # cfg.set("token", data.get("token", ""))
     # cfg.save_config()
 def get(key:str,default:any=None):
