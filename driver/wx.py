@@ -271,7 +271,7 @@ class Wx:
                 self.controller.close()
                 rel=True
         except:
-            print("浏览器未启动")
+            # print("浏览器未启动")
             pass
         return rel
     def Clean(self):

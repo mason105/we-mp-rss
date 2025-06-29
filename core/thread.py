@@ -37,7 +37,7 @@ class ThreadManager(threading.Thread):
     def run(self):
         """线程运行逻辑"""
         try:
-            while not self._stop_event.is_set() and not self._force_stop:
+            # while not self._stop_event.is_set() and not self._force_stop:
                 if self._target:
                     self._target(*self._args, **self._kwargs)
         except Exception as e:
