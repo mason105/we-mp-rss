@@ -107,13 +107,14 @@ async def update_mps(
                     message="请不要频繁更新操作",
                     data={"time_span":time_span}
                 )
-            
-
-        from core.wx import WxGather
-        wx=WxGather().Model()
-        wx.get_Articles(mp.faker_id,Mps_id=mp.id,Mps_title=mp.mp_name,CallBack=UpdateArticle,start_page=start_page,MaxPage=end_page)
-        result=wx.articles
-
+        result=[]    
+        def UpArt(mp):
+            from core.wx import WxGather
+            wx=WxGather().Model()
+            wx.get_Articles(mp.faker_id,Mps_id=mp.id,Mps_title=mp.mp_name,CallBack=UpdateArticle,start_page=start_page,MaxPage=end_page)
+            result=wx.articles
+        import threading
+        threading.Thread(target=UpArt,args=(mp,)).start()
         return success_response({
             "time_span":time_span,
             "list":result,
