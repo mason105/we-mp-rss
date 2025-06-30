@@ -53,7 +53,7 @@ docker run -d  --name we-mp-rss  -p 8001:8001   docker.1ms.run/rachelos/we-mp-rs
 - 添加订阅  
 <img src="docs/添加订阅.png" alt="添加订阅" width="80%"/><br/>
 
-- FOLO客户端应用
+- 客户端应用
 <img src="docs/folo.webp" alt="FOLO客户端应用" width="80%"/><br/>
 
 
@@ -175,6 +175,24 @@ docker run -d \
   ghcr.io/rachelos/we-mp-rss:latest
 
 ```
+- Compose Yaml
+```
+version: '1.4.2'
+services:
+  we-mp-rss:
+    image: ghcr.io/rachelos/we-mp-rss:latest
+    container_name: we-mp-rss
+    ports:
+      - "8001:8001"
+    environment:
+      - DB=sqlite:///data/db.db
+      - USERNAME=admin
+      - PASSWORD=admin@123
+      - DINGDING_WEBHOOK=https://oapi.dingtalk.com/robot/send?access_token=xxx
+    volumes:
+      - ./data:/app/data
+```
+
 ### Docker Mysql
 ```
 docker run -d \
@@ -187,7 +205,23 @@ docker run -d \
   -v $(pwd)/data:/app/data \
   ghcr.io/rachelos/we-mp-rss:latest
 ```
-
+- Compose Yaml
+```
+version: '1.4.2'
+services:
+  we-mp-rss:
+    image: ghcr.io/rachelos/we-mp-rss:latest
+    container_name: we-mp-rss
+    ports:
+      - "8001:8001"
+    environment:
+      - DB=mysql+pymysql://<username>:<password>@<host>/<database>?charset=utf8mb4
+      - USERNAME=admin
+      - PASSWORD=admin@123
+      - DINGDING_WEBHOOK=https://oapi.dingtalk.com/robot/send?access_token=xxx
+    volumes:
+      - ./data:/app/data
+```
 # Docker构建及运行
 ```
 # 构建
