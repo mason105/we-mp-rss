@@ -32,18 +32,32 @@ docker run -d  --name we-mp-rss  -p 8001:8001   docker.1ms.run/rachelos/we-mp-rs
 - RSS订阅生成
 - 用户友好的Web管理界面
 - 定时自动更新内容
+- 支持多种数据库（默认SQLite，可选MySQL）
+- 支持多种抓取方式
+- 支持多种RSS客户端
+- 支持授权过期提醒
+
+
+# ❤️ 赞助
+如果觉得 We-MP-RSS 对你有帮助，欢迎给我来一杯啤酒！<br/>
+<img src="docs/赞赏码.jpg" width=180/>
+[Paypal](https://www.paypal.com/ncp/payment/PUA72WYLAV5KW)
 
 ## 界面截图
 - 登录界面  
 <img src="docs/登录.png" alt="登录" width="80%"/><br/>
 - 主界面  
 <img src="docs/主界面.png" alt="主界面" width="80%"/><br/>
-
+- 扫码授权  
+<img src="docs/扫码授权.png" alt="扫码授权" width="80%"/><br/>
 - 添加订阅  
 <img src="docs/添加订阅.png" alt="添加订阅" width="80%"/><br/>
 
-- 扫码授权  
-<img src="docs/扫码授权.png" alt="扫码授权" width="80%"/><br/>
+- FOLO客户端应用
+<img src="docs/folo.webp" alt="FOLO客户端应用" width="80%"/><br/>
+
+
+
 ## 系统架构
 
 项目采用前后端分离架构：
@@ -230,10 +244,6 @@ QQ:244538330
 [橙单-高质量低代码平台](https://gitee.com/orangeform/orange-admin)
 [orange-flowable](https://gitee.com/orangeform/orange-flowable)
 
-# ❤️ 赞助
-如果觉得 We-MP-RSS 对你有帮助，欢迎给我来一杯啤酒！<br/>
-<img src="docs/赞赏码.jpg" width=180/>
-[Paypal](https://www.paypal.com/ncp/payment/PUA72WYLAV5KW)
 
 
 ## 许可证

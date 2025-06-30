@@ -7,6 +7,7 @@ from .models.config_management import ConfigManagement
 from .models.feed import Feed
 from .models.message_task import MessageTask
 from .models.user import User
+from .models.tags import Tags
 def printf(*args):
     if "SYNC" in str(args):
         print(args)
@@ -36,7 +37,8 @@ class ModelSync:
                 ConfigManagement,
                 Feed,
                 MessageTask,
-                User
+                User,
+                Tags
             ]
         except Exception as e:
             import traceback

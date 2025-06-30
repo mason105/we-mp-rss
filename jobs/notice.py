@@ -1,5 +1,6 @@
 
 from core.config import cfg
+import time
 def sys_notice(text:str="",title:str=""):
     from core.notice import notice
     markdown_text = f"### {title} 通知\n{text}"
@@ -26,7 +27,7 @@ def CallBackNotice():
         """
         rss_domain=cfg.get("rss.base_url","")
         url=rss_domain+str(url)
-        text=f"![二维码]({url})"
-        text+=f"<img src='{url}' width=40 height=40 />"
-        text+=f"\n\n## 请使用微信扫描二维码进行授权"
+        text=f"- 发送时间： {time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))}"
+        text+=f"![二维码]({url})"
+        text+=f"\n- 请使用微信扫描二维码进行授权"
         sys_notice(text, "WeRss授权过期")
