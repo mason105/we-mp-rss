@@ -177,7 +177,6 @@ docker run -d \
 ```
 - Compose Yaml
 ```
-version: '1.4.2'
 services:
   we-mp-rss:
     image: ghcr.io/rachelos/we-mp-rss:latest
@@ -207,7 +206,6 @@ docker run -d \
 ```
 - Compose Yaml
 ```
-version: '1.4.2'
 services:
   we-mp-rss:
     image: ghcr.io/rachelos/we-mp-rss:latest
