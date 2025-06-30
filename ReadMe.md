@@ -53,7 +53,7 @@ docker run -d  --name we-mp-rss  -p 8001:8001   docker.1ms.run/rachelos/we-mp-rs
 - 添加订阅  
 <img src="docs/添加订阅.png" alt="添加订阅" width="80%"/><br/>
 
-- 客户端应用
+- 客户端应用<br/>
 <img src="docs/folo.webp" alt="FOLO客户端应用" width="80%"/><br/>
 
 
