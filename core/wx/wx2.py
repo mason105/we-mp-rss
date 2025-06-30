@@ -43,7 +43,7 @@ class MpsWeb(WxGather):
                 logger.error(e)
         return ""
     # 重写 get_Articles 方法
-    def get_Articles(self, faker_id:str=None,Mps_id:str=None,Mps_title="",CallBack=None,begin:int=0,MaxPage:int=1,interval=1,Gather_Content=False,Item_Over_CallBack=None,Over_CallBack=None):
+    def get_Articles(self, faker_id:str=None,Mps_id:str=None,Mps_title="",CallBack=None,start_page:int=0,MaxPage:int=1,interval=1,Gather_Content=False,Item_Over_CallBack=None,Over_CallBack=None):
         super().Start(mp_id=Mps_id)
         if self.Gather_Content:
             Gather_Content=True
@@ -65,7 +65,7 @@ class MpsWeb(WxGather):
         # 连接超时
         session=self.session
         # 起始页数
-        i = 0
+        i = start_page
         while True:
             if i >= MaxPage:
                 break

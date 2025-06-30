@@ -62,6 +62,22 @@
         </template>
       </a-page-header>
 
+      <a-modal 
+        v-model:visible="refreshModalVisible" 
+        title="设置刷新范围"
+        @ok="handleRefresh"
+        @cancel="refreshModalVisible = false"
+      >
+        <a-form :model="refreshForm" :rules="refreshRules">
+          <a-form-item field="startPage" label="开始页码">
+            <a-input-number v-model="refreshForm.startPage" :min="1" />
+          </a-form-item>
+          <a-form-item field="endPage" label="结束页码">
+            <a-input-number v-model="refreshForm.endPage" :min="refreshForm.startPage" />
+          </a-form-item>
+        </a-form>
+      </a-modal>
+
       <a-card>
         <div class="search-bar">
           <a-input-search v-model="searchText" placeholder="搜索文章标题" @search="handleSearch" @keyup.enter="handleSearch" allow-clear />
@@ -304,14 +320,36 @@ const openRssFeed = () => {
 
 const fullLoading = ref(false)
 
-const refresh = () => {
+const refreshModalVisible = ref(false)
+const refreshForm = ref({
+  startPage: 0,
+  endPage: 1
+})
+const refreshRules = {
+  startPage: [{ required: true, message: '请输入开始页码' }],
+  endPage: [{ required: true, message: '请输入结束页码' }]
+}
+
+const showRefreshModal = () => {
+  refreshModalVisible.value = true
+}
+
+const handleRefresh = () => {
   fullLoading.value = true
-  UpdateMps(activeMpId.value).then(() => {
+  UpdateMps(activeMpId.value, {
+    start_page: refreshForm.value.startPage,
+    end_page: refreshForm.value.endPage
+  }).then(() => {
     Message.success('刷新成功')
+    refreshModalVisible.value = false
   }).finally(() => {
     fullLoading.value = false
   })
   fetchArticles()
+}
+
+const refresh = () => {
+  showRefreshModal()
 }
 
 const showAddModal = () => {

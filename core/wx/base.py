@@ -65,7 +65,7 @@ class WxGather:
 
 
     #通过公众号码平台接口查询公众号
-    def search_Biz(self,kw:str="",limit=5,offset=0):
+    def search_Biz(self,kw:str="",limit=10,offset=0):
 
         self.get_token()
         url = "https://mp.weixin.qq.com/cgi-bin/searchbiz"

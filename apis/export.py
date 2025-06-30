@@ -9,7 +9,7 @@ from .base import success_response, error_response
 from datetime import datetime
 from core.config import cfg
 from core.res import save_avatar_locally
-import pandas as pd
+import csv
 import io
 import os
 router = APIRouter(prefix=f"/export", tags=["导入/导出"])
@@ -29,28 +29,24 @@ async def export_mps(
         
         mps = query.order_by(Feed.created_at.desc()).limit(limit).offset(offset).all()
         
-        # 转换为DataFrame
-        data = [{
-            "id": mp.id,
-            "公众号名称": mp.mp_name,
-            "封面图": mp.mp_cover,
-            "简介": mp.mp_intro,
-            "状态": mp.status,
-            "创建时间": mp.created_at.isoformat(),
-            "faker_id": mp.faker_id
-        } for mp in mps]
-        
-        df = pd.DataFrame(data)
+        # 准备CSV数据
+        headers = ["id", "公众号名称", "封面图", "简介", "状态", "创建时间", "faker_id"]
+        data = [[
+            mp.id,
+            mp.mp_name,
+            mp.mp_cover,
+            mp.mp_intro,
+            mp.status,
+            mp.created_at.isoformat(),
+            mp.faker_id
+        ] for mp in mps]
         
         # 创建临时CSV文件
-        csv_buffer = io.StringIO()
-        df.to_csv(csv_buffer, index=False, encoding='utf-8-sig')
-        csv_buffer.seek(0)
-        
-        # 保存临时文件
         temp_file = "temp_mp_export.csv"
-        with open(temp_file, "w", encoding='utf-8-sig') as f:
-            f.write(csv_buffer.getvalue())
+        with open(temp_file, "w", encoding='utf-8-sig', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(data)
         
         # 返回文件下载
         return FileResponse(
@@ -80,13 +76,13 @@ async def import_mps(
         from core.models.feed import Feed
         
         # 读取上传的CSV文件
-        contents = await file.read()
-        df = pd.read_csv(io.BytesIO(contents), encoding='utf-8-sig')
+        contents = (await file.read()).decode('utf-8-sig')
+        csv_reader = csv.DictReader(io.StringIO(contents))
         
         # 验证必要字段
         required_columns = ["公众号名称", "封面图", "简介"]
-        missing_cols = [col for col in required_columns if col not in df.columns]
-        if missing_cols:
+        if not all(col in csv_reader.fieldnames for col in required_columns):
+            missing_cols = [col for col in required_columns if col not in csv_reader.fieldnames]
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=error_response(
@@ -100,11 +96,11 @@ async def import_mps(
         updated = 0
         skipped = 0
         
-        for _, row in df.iterrows():
+        for row in csv_reader:
             mp_name = row["公众号名称"]
             mp_cover = row["封面图"]
             mp_intro = row.get("简介", "")
-            status_val = row.get("状态", 1)
+            status_val = int(row.get("状态", 1)) if row.get("状态") else 1
             faker_id = row.get("faker_id", "")
             
             # 检查是否已存在
@@ -135,7 +131,7 @@ async def import_mps(
         return success_response({
             "message": "导入公众号列表成功",
             "stats": {
-                "total": len(df),
+                "total": imported + updated + skipped,
                 "imported": imported,
                 "updated": updated,
                 "skipped": skipped
