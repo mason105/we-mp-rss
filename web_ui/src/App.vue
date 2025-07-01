@@ -15,6 +15,16 @@
         <a-link href="/api/docs" target="_blank" style="margin-right: 20px;">Docs</a-link>
         <a-link href="https://gitee.com/rachel_os/we-mp-rss" target="_blank" style="margin-right: 20px;">Gitee</a-link>
         <a-link href="https://github.com/rachelos/we-mp-rss" target="_blank" style="margin-right: 20px;">GitHub</a-link>
+
+        <a-tooltip content="如果您需要部署此项目，建立采用腾讯云服务器，您懂得" position="bottom">
+          <a-link href="https://cloud.tencent.com/act/cps/redirect?redirect=2446&cps_key=f8ce741e7b24cd68141ab2115122ea94&from=console" target="_blank" style="margin-right: 20px;">云部署</a-link>
+        </a-tooltip>
+        <a-tooltip content="您的支持是作者的最大动力，来一杯咖啡吧" position="bottom">
+          <a-link href="https://www.paypal.com/ncp/payment/PUA72WYLAV5KW" target="_blank" style="margin-right: 20px;">赞助</a-link>
+        </a-tooltip>
+        
+        <a-link @click="showSponsorModal" style="margin-right: 20px; cursor: pointer;" type="text">支持</a-link>
+      
         <a-dropdown position="br" trigger="click">
           <div class="user-info">
             <a-avatar :size="36">
@@ -43,6 +53,12 @@
           </template>
         </a-dropdown>
         <WechatAuthQrcode ref="qrcodeRef" />
+        <a-modal v-model:visible="sponsorVisible" title="感谢支持" :footer="false" :style="{zIndex: 1000}" unmount-on-close>
+          <div style="text-align: center;">
+            <p>如果您觉得这个项目对您有帮助,请给Rachel来一杯Coffee吧~ </p>
+            <img src="@/assets/images/sponsor.jpg" alt="赞赏码" style="max-width: 300px; margin-top: 20px;">
+          </div>
+        </a-modal>
       </div>
     </a-layout-header>
 
@@ -60,6 +76,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, provide } from 'vue'
+import { Modal } from '@arco-design/web-vue/es/modal'
+
+const sponsorVisible = ref(false)
+const showSponsorModal = (e: Event) => {
+  e.preventDefault()
+  sponsorVisible.value = true
+  console.log('Sponsor modal triggered') // 添加调试日志
+}
 import { useRouter, useRoute } from 'vue-router'
 import { Message } from '@arco-design/web-vue'
 import { getCurrentUser } from '@/api/auth'
