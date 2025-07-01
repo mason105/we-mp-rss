@@ -87,16 +87,27 @@ class ModelSync:
                             default_value = default_value()
                         
                         column_def = f"{column.name} {db_type} {nullable}"
-                        # 设置自动增长属性(仅对主键列)
-                        if getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                        # 设置自动增长属性(仅对INTEGER类型的主键列)
+                        if (getattr(column, 'autoincrement', False) and 
+                            getattr(column, 'primary_key', False) and
+                            str(column.type).upper() in ('INTEGER', 'INT', 'BIGINT')):
                             if db_type == 'mysql':
                                 column_def += " AUTO_INCREMENT"
+                                printf(f"[SYNC] 为MySQL INTEGER主键列 {column.name} 添加AUTO_INCREMENT")
                             elif db_type == 'sqlite':
-                                column_def += " AUTOINCREMENT"
+                                # SQLite特殊处理: 必须声明为 INTEGER PRIMARY KEY AUTOINCREMENT
+                                if "PRIMARY KEY" not in column_def:
+                                    column_def += " PRIMARY KEY AUTOINCREMENT"
+                                    printf(f"[SYNC] 为SQLite INTEGER主键列 {column.name} 添加PRIMARY KEY AUTOINCREMENT")
+                                else:
+                                    column_def = column_def.replace("PRIMARY KEY", "PRIMARY KEY AUTOINCREMENT")
+                                    printf(f"[SYNC] 为SQLite INTEGER主键列 {column.name} 添加AUTOINCREMENT")
                             elif db_type == 'postgresql':
                                 # PostgreSQL使用SERIAL会自动创建序列
                                 column_def += " SERIAL"
-                            printf(f"[DEBUG] 为主键列 {column.name} 设置自动增长")
+                                printf(f"[SYNC] 为PostgreSQL INTEGER主键列 {column.name} 添加SERIAL")
+                        elif getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                            printf(f"[WARN] 列 {column.name} 是主键但类型不是INTEGER({str(column.type)})，跳过自动增长属性设置")
             
                         if default_value is not None:
                             column_def += f" DEFAULT '{default_value}'" if isinstance(default_value, str) else f" DEFAULT {default_value}"
@@ -228,15 +239,26 @@ class ModelSync:
                 # 构建ADD COLUMN语句
                 add_sql = f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type} {nullable}"
                 
-                # 添加自动增长属性(仅对主键列)
-                if getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                # 添加自动增长属性(仅对INTEGER类型的主键列)
+                if (getattr(column, 'autoincrement', False) and 
+                    getattr(column, 'primary_key', False) and
+                    str(column.type).upper() in ('INTEGER', 'INT', 'BIGINT')):
                     if db_type == 'mysql':
                         add_sql += " AUTO_INCREMENT"
+                        printf(f"[SYNC] 为MySQL INTEGER主键列 {column.name} 添加AUTO_INCREMENT")
                     elif db_type == 'sqlite':
-                        add_sql += " AUTOINCREMENT"
+                        # SQLite特殊处理: 必须声明为 INTEGER PRIMARY KEY AUTOINCREMENT
+                        if "PRIMARY KEY" not in add_sql:
+                            add_sql += " PRIMARY KEY AUTOINCREMENT"
+                            printf(f"[SYNC] 为SQLite INTEGER主键列 {column.name} 添加PRIMARY KEY AUTOINCREMENT")
+                        else:
+                            add_sql = add_sql.replace("PRIMARY KEY", "PRIMARY KEY AUTOINCREMENT")
+                            printf(f"[SYNC] 为SQLite INTEGER主键列 {column.name} 添加AUTOINCREMENT")
                     elif db_type == 'postgresql':
                         add_sql += " SERIAL"
-                    printf(f"[DEBUG] 为主键列 {column.name} 添加自动增长属性")
+                        printf(f"[SYNC] 为PostgreSQL INTEGER主键列 {column.name} 添加SERIAL")
+                elif getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                    printf(f"[WARN] 列 {column.name} 是主键但类型不是INTEGER({str(column.type)})，跳过自动增长属性设置")
                 
                 # 添加默认值设置
                 if default_value is not None:
@@ -267,7 +289,7 @@ class ModelSync:
                 raise
     
     def _alter_column_sqlite(self, table_name: str, column) -> None:
-        """SQLite专用: 通过创建新表并复制数据来修改列，支持默认值"""
+        """SQLite专用: 通过创建新表并复制数据来修改列，支持默认值和自动增长属性"""
         try:
             printf(f"[INFO] 开始修改SQLite表 {table_name} 的列 {column.name}")
             
@@ -280,7 +302,7 @@ class ModelSync:
                 temp_table = f"{table_name}_temp"
                 conn.execute(text(f"DROP TABLE IF EXISTS {temp_table}"))
                 
-                # 创建带新结构的临时表，包含默认值
+                # 创建带新结构的临时表，包含默认值和自动增长属性
                 column_defs = []
                 for col in columns:
                     if col['name'] == column.name:
@@ -295,13 +317,31 @@ class ModelSync:
                                 default_value = default_value()
                         
                         col_def = f"{col['name']} {col_type}"
+                        
+                        # SQLite特殊处理: AUTOINCREMENT必须与PRIMARY KEY一起声明
+                        if (getattr(column, 'autoincrement', False) and 
+                            getattr(column, 'primary_key', False) and
+                            str(column.type).upper() in ('INTEGER', 'INT', 'BIGINT')):
+                            # 确保列定义为 INTEGER PRIMARY KEY AUTOINCREMENT
+                            if "PRIMARY KEY" not in col_def:
+                                col_def += " PRIMARY KEY AUTOINCREMENT"
+                                printf(f"[SYNC] 为SQLite INTEGER主键列 {column.name} 添加PRIMARY KEY AUTOINCREMENT")
+                            else:
+                                col_def = col_def.replace("PRIMARY KEY", "PRIMARY KEY AUTOINCREMENT")
+                                printf(f"[SYNC] 为SQLite INTEGER主键列 {column.name} 添加AUTOINCREMENT")
+                        elif getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
+                            printf(f"[WARN] 列 {column.name} 是主键但类型不是INTEGER({str(column.type)})，跳过AUTOINCREMENT设置")
+                        
+                        # 添加默认值设置
                         if default_value is not None:
                             col_def += f" DEFAULT '{default_value}'" if isinstance(default_value, str) else f" DEFAULT {default_value}"
                         elif column.nullable:
                             col_def += " DEFAULT NULL"
                     else:
-                        # 保持其他列不变
+                        # 保持其他列不变，但保留原列的自动增长属性
                         col_def = f"{col['name']} {col['type']}"
+                        if col.get('autoincrement', False) and col.get('primary_key', False):
+                            col_def += " AUTOINCREMENT"
                     
                     column_defs.append(col_def)
                 
@@ -353,16 +393,21 @@ class ModelSync:
                     # 添加自动增长属性(仅对整数类型的主键列)
                     if (getattr(column, 'autoincrement', False) and 
                         getattr(column, 'primary_key', False) and
-                        str(column.type).upper() in ('INT', 'INTEGER', 'BIGINT', 'SMALLINT')):
+                        str(column.type).upper() in ('INTEGER', 'INT', 'BIGINT', 'SMALLINT')):
                         if db_type == 'mysql':
                             modify_sql += " AUTO_INCREMENT"
+                            printf(f"[SYNC] 为MySQL INTEGER主键列 {column.name} 添加AUTO_INCREMENT")
                         elif db_type == 'sqlite':
                             modify_sql += " AUTOINCREMENT"
+                            printf(f"[SYNC] 为SQLite INTEGER主键列 {column.name} 添加AUTOINCREMENT")
                         elif db_type == 'postgresql':
                             modify_sql += " SERIAL"
-                        printf(f"[DEBUG] 修改整数主键列 {column.name} 的自动增长属性")
+                            printf(f"[SYNC] 为PostgreSQL INTEGER主键列 {column.name} 添加SERIAL")
+                        else:
+                            printf(f"[WARN] 不支持的数据库类型 {db_type} 的自动增长属性")
+                        printf(f"[DEBUG] 生成的修改SQL: {modify_sql}")
                     elif getattr(column, 'autoincrement', False) and getattr(column, 'primary_key', False):
-                        printf(f"[WARN] 列 {column.name} 是主键但类型不是整数({str(column.type)})，跳过AUTO_INCREMENT设置")
+                        printf(f"[WARN] 列 {column.name} 是主键但类型不是INTEGER({str(column.type)})，跳过自动增长属性设置")
                     
                     # 添加默认值设置
                     if default_value is not None:
@@ -493,11 +538,20 @@ class ModelSync:
             # 5. 检查自动增长属性是否匹配
             db_autoinc = db_col.get('autoincrement', False)
             model_autoinc = getattr(model_col, 'autoincrement', False)
+            
+            printf(f"[DEBUG] 检查列 {model_col.name} 的自动增长属性: 数据库({db_autoinc}) vs 模型({model_autoinc})")
+            
             # 只有当列是主键时才比较自动增长属性
             if db_col.get('primary_key', False) or getattr(model_col, 'primary_key', False):
+                printf(f"[DEBUG] 列 {model_col.name} 是主键，检查自动增长属性")
                 if db_autoinc != model_autoinc:
-                    printf(f"[DEBUG] 自动增长属性不匹配: 数据库({db_autoinc}) != 模型({model_autoinc})")
+                    printf(f"[SYNC] 检测到自动增长属性不匹配: 数据库({db_autoinc}) != 模型({model_autoinc})")
+                    printf(f"[SYNC] 列 {model_col.name} 将更新自动增长属性")
                     return False
+                else:
+                    printf(f"[DEBUG] 自动增长属性匹配: {model_autoinc}")
+            else:
+                printf(f"[DEBUG] 列 {model_col.name} 不是主键，跳过自动增长属性检查")
                 
             return True
         except Exception as e:

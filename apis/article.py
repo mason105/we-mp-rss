@@ -3,9 +3,10 @@ from core.auth import get_current_user
 from core.db import DB
 from core.models.base import DATA_STATUS
 from core.models.article import Article
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, desc
 from .base import success_response, error_response
 from core.config import cfg
+from core.print import print_warning, print_info, print_error, print_success
 router = APIRouter(prefix=f"/articles", tags=["文章管理"])
 @router.api_route("", summary="获取文章列表",methods= ["GET", "POST"], operation_id="get_articles_list")
 async def get_articles(
@@ -40,14 +41,11 @@ async def get_articles(
         total = query.count()
         
         # 分页查询（按发布时间降序）
-        from sqlalchemy import desc
-        articles = query.order_by(desc(Article.publish_time))\
-                       .offset(offset)\
-                       .limit(limit)\
-                       .all()
-        # 打印生成的 SQL 语句
-        print(query.statement.compile(compile_kwargs={"literal_binds": True}))
+        articles = query.order_by(Article.publish_time.desc()).offset(offset).limit(limit).all()
         
+        # 打印生成的 SQL 语句（包含分页参数）
+        print_warning(query.statement.compile(compile_kwargs={"literal_binds": True}))
+                       
         # 查询公众号名称
         from core.models.feed import Feed
         mp_names = {}

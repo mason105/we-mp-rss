@@ -16,7 +16,7 @@
         <a-link href="https://gitee.com/rachel_os/we-mp-rss" target="_blank" style="margin-right: 20px;">Gitee</a-link>
         <a-link href="https://github.com/rachelos/we-mp-rss" target="_blank" style="margin-right: 20px;">GitHub</a-link>
 
-        <a-tooltip content="如果您需要部署此项目，建立采用腾讯云服务器，您懂得" position="bottom">
+        <a-tooltip content="如果您需要部署此项目，建议采用腾讯云服务器，您懂得" position="bottom">
           <a-link href="https://cloud.tencent.com/act/cps/redirect?redirect=2446&cps_key=f8ce741e7b24cd68141ab2115122ea94&from=console" target="_blank" style="margin-right: 20px;">云部署</a-link>
         </a-tooltip>
         <a-tooltip content="您的支持是作者的最大动力，来一杯咖啡吧" position="bottom">

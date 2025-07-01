@@ -159,7 +159,9 @@ API服务启动后，访问以下地址查看文档：
 | `RSS_FULL_CONTEXT`       | 是否显示全文                                                                | False                       |
 
 
+# 云端部署
 
+[推荐使用腾讯云服务器](https://cloud.tencent.com/act/cps/redirect?redirect=5878&cps_key=f8ce741e7b24cd68141ab2115122ea94&from=console)
 
 ## 快速运行
 ### Docker Sqlite

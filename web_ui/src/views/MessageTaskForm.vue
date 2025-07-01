@@ -10,7 +10,7 @@ const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const isEditMode = ref(false)
-const taskId = ref<number | null>(null)
+const taskId = ref<string | null>(null)
 const showCronPicker = ref(false)
 const showMpSelector = ref(false)
 
@@ -27,7 +27,7 @@ const formData = ref<MessageTaskCreate>({
   cron_exp: '* * * * *'
 })
 
-const fetchTaskDetail = async (id: number) => {
+const fetchTaskDetail = async (id: string) => {
   loading.value = true
   try {
     const res = await getMessageTask(id)
@@ -81,7 +81,7 @@ const handleSubmit = async () => {
 onMounted(() => {
   if (route.params.id) {
     isEditMode.value = true
-    taskId.value = Number(route.params.id)
+    taskId.value = route.params.id
     fetchTaskDetail(taskId.value)
   }
 })
