@@ -7,18 +7,24 @@ class RSS:
     content_cache_dir = os.path.normpath("data/cache/content")
     rss_file="all"
     
-    def __init__(self, name:str="all",cache_dir: str = None):
+    def __init__(self, name:str="all",cache_dir: str = None,ext:str="rss"):
         if cache_dir is not None:
             self.cache_dir = cache_dir
-      
+        self.ext=ext    
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.content_cache_dir, exist_ok=True)
-        normalized_path = os.path.normpath(f"{self.cache_dir}/{name}.xml")
+        normalized_path = os.path.normpath(f"{self.cache_dir}/{name}.{ext}")
         if not normalized_path.startswith(self.cache_dir):
             raise ValueError("Invalid file path: Path traversal detected.")
         self.rss_file = normalized_path
         pass
-
+    def get_type(self):
+        if self.ext=="rss" or self.ext=="atom":
+            return "application/xml"
+        if self.ext=="json":
+            return "application/json"
+        return "text/plain"
+    
     def cache_content(self, content_id: str, content: dict):
         """缓存文章内容"""
         content["content"]=self.add_logo_prefix_to_urls(content["content"])
@@ -49,14 +55,23 @@ class RSS:
         """将datetime对象或时间字符串转换为RFC 822格式的时间字符串"""
         dt = datetime.fromisoformat(dt)
         return dt.strftime('%a, %d %b %Y %H:%M:%S %z')
-    def get_rss(self,name:str="all"):
-        if not hasattr(self, 'rss_file') or not self.rss_file:
-            return None
+    
+    def add_logo_prefix_to_urls(self, text: str) -> str:
+        """在字符串中所有http/https开头的图片URL前添加/static/res/logo/前缀
+        
+        Args:
+            text: 包含URL的原始字符串
+            
+        Returns:
+            处理后的字符串，所有图片URL前添加了前缀
+        """
+        import re
         try:
-            with open(self.rss_file, "r", encoding="utf-8") as f:
-                return f.read()
-        except FileNotFoundError:
-            return None 
+            pattern = re.compile(r'(<img[^>]*src=["\'])(?!\/static\/res\/logo\/)([^"\']*)', re.IGNORECASE)
+            return pattern.sub(r'\1/static/res/logo/\2', text)
+        except:
+            return text
+       
     def generate_rss(self,rss_list: dict, title: str = "Mp-We-Rss", 
                     link: str = "https://github.com/rachelos/we-mp-rss",
                     description: str = "RSS频道", language: str = "zh-CN",image_url:str=""):
@@ -118,23 +133,112 @@ class RSS:
             with open(self.rss_file, "w", encoding="utf-8") as f:
                 f.write(tree_str)
         return tree_str
-
-    def add_logo_prefix_to_urls(self, text: str) -> str:
-        """在字符串中所有http/https开头的图片URL前添加/static/res/logo/前缀
+     
+    def generate_atom(self,rss_list: dict, title: str = "Mp-We-Rss", 
+                    link: str = "https://github.com/rachelos/we-mp-rss",
+                    description: str = "RSS频道", language: str = "zh-CN",image_url:str="") -> str:
+        """生成Atom格式的RSS内容
         
         Args:
-            text: 包含URL的原始字符串
+            rss_list: RSS条目列表
+            title: 频道标题
+            link: 频道链接
+            description: 频道描述
+            language: 语言
             
         Returns:
-            处理后的字符串，所有图片URL前添加了前缀
+            Atom格式的XML字符串
         """
-        import re
-        try:
-            pattern = re.compile(r'(<img[^>]*src=["\'])(?!\/static\/res\/logo\/)([^"\']*)', re.IGNORECASE)
-            return pattern.sub(r'\1/static/res/logo/\2', text)
-        except:
-            return text
+        from core.config import cfg
+        full_context = bool(cfg.get("rss.full_context", False))
+        
+        # 创建根元素(Atom标准)
+        feed = ET.Element("feed", xmlns="http://www.w3.org/2005/Atom")
+        ET.SubElement(feed, "title").text = title
+        ET.SubElement(feed, "link", href=link)
+        ET.SubElement(feed, "updated").text = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %z")
+        ET.SubElement(feed, "id").text = link
+        ET.SubElement(feed, "author").text = "Mp-We-Rss"
+        
+        for rss_item in rss_list:
+            entry = ET.SubElement(feed, "entry")
+            ET.SubElement(entry, "id").text = rss_item["id"]
+            ET.SubElement(entry, "title").text = rss_item["title"]
+            ET.SubElement(entry, "link", href=rss_item["link"])
+            ET.SubElement(entry, "updated").text =self.datetime_to_rfc822(str(rss_item["updated"]))
+            ET.SubElement(entry, "summary").text = rss_item["description"]
             
+            if full_context:
+                content = ET.SubElement(entry, "content", type="html")
+                content.text = str(rss_item["content"])
+        
+        # 生成XML字符串
+        tree_str = '<?xml version="1.0" encoding="utf-8"?>\r\n' + \
+                  ET.tostring(feed, encoding="utf-8", method="xml").decode("utf-8")
+        
+        if self.rss_file is not None:
+            with open(self.rss_file, "w", encoding="utf-8") as f:
+                f.write(tree_str)
+        return tree_str
+
+    def generate_json(self, rss_list: dict) -> str:
+        """获取JSON格式的RSS内容
+        
+        Args:
+            rss_list: RSS条目列表
+            
+        Returns:
+            JSON格式的字符串
+        """
+
+        result = {
+            "items": [
+                {
+                    "id": item["id"],
+                    "title": item["title"],
+                    "description": item["description"],
+                    "link": item["link"],
+                    "updated": item["updated"].isoformat() if isinstance(item["updated"], datetime) else item["updated"],
+                    "content": item.get("content", "")
+                } for item in rss_list
+            ]
+        }
+        return json.dumps(result, ensure_ascii=False, indent=2, default=self.serialize_datetime)
+
+    def get_cache(self):
+        if not hasattr(self, 'rss_file') or not self.rss_file:
+               return None
+        try:
+            with open(self.rss_file, "r", encoding="utf-8") as f:
+                return f.read()  
+        except FileNotFoundError:
+            return None     
+    def generate(self,rss_list: dict,ext=str, title: str = "Mp-We-Rss", 
+                    link: str = "https://github.com/rachelos/we-mp-rss",
+                    description: str = "RSS频道", language: str = "zh-CN",image_url:str="") -> str:
+        """根据扩展名获取对应格式的RSS内容
+        
+        Args:
+            rss_list: RSS条目列表
+            ext: 文件扩展名(.rss/.xml/.atom/.json)
+            **kwargs: 传递给各格式生成方法的参数
+            
+        Returns:
+            对应格式的字符串
+            
+        Raises:
+            ValueError: 当扩展名不支持时
+        """
+        ext = ext.lower().strip('.')
+        if ext in ('rss', 'xml'):
+            return self.generate_rss(rss_list, title=title, link=link, description=description,language=language,image_url=image_url)
+        elif ext == 'atom':
+            return self.generate_atom(rss_list, title=title, link=link, description=description,language=language,image_url=image_url)
+        elif ext == 'json':
+            return self.generate_json(rss_list)
+        else:
+            raise ValueError(f"Unsupported extension: {ext}")
+
     def clear_cache(self,mp_id:str=""):
 
         """清除所有缓存文件
