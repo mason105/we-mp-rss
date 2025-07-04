@@ -39,9 +39,10 @@ async def get_articles(
         
         # 获取总数
         total = query.count()
-        
+        query= query.order_by(Article.publish_time.desc(),Article.id.desc()).offset(offset).limit(limit)
+        # query= query.order_by(Article.id.desc()).offset(offset).limit(limit)
         # 分页查询（按发布时间降序）
-        articles = query.order_by(Article.publish_time.desc()).offset(offset).limit(limit).all()
+        articles = query.all()
         
         # 打印生成的 SQL 语句（包含分页参数）
         print_warning(query.statement.compile(compile_kwargs={"literal_binds": True}))

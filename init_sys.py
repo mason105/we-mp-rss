@@ -25,11 +25,10 @@ def init_user(_db: Db):
         pass
 def sync_models():
      # 同步模型到表结构
-         from core.data_sync import ModelSync
+         from data_sync import DatabaseSynchronizer
          DB.create_tables()
          time.sleep(3)
-         sync=ModelSync(eng=DB.get_engine())
-         sync.sync_all()
+         DatabaseSynchronizer(db_url=cfg.get("db","")).sync()
          print_info("模型同步完成")
 
      

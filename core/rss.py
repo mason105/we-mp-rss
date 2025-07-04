@@ -155,11 +155,19 @@ class RSS:
         # 创建根元素(Atom标准)
         feed = ET.Element("feed", xmlns="http://www.w3.org/2005/Atom")
         ET.SubElement(feed, "title").text = title
-        ET.SubElement(feed, "link", href=link)
+        ET.SubElement(feed, "link",rel="alternate", href=link)
+        ET.SubElement(feed, "link",rel="icon", href=image_url)
+        ET.SubElement(feed, "logo").text=image_url
+        ET.SubElement(feed, "icon").text=image_url
         ET.SubElement(feed, "updated").text = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %z")
         ET.SubElement(feed, "id").text = link
         ET.SubElement(feed, "author").text = "Mp-We-Rss"
-        
+        # 设置image子项
+        if cfg.get("rss.add_cover",False)==True and image_url != "":
+            image = ET.SubElement(feed, "image")
+            ET.SubElement(image, "url").text = image_url
+            ET.SubElement(image, "title").text = title
+            ET.SubElement(image, "link").text = link
         for rss_item in rss_list:
             entry = ET.SubElement(feed, "entry")
             ET.SubElement(entry, "id").text = rss_item["id"]
@@ -167,6 +175,13 @@ class RSS:
             ET.SubElement(entry, "link", href=rss_item["link"])
             ET.SubElement(entry, "updated").text =self.datetime_to_rfc822(str(rss_item["updated"]))
             ET.SubElement(entry, "summary").text = rss_item["description"]
+            ET.SubElement(entry, "author").text = rss_item["mp_name"]
+             # 添加图片封面
+            if cfg.get("rss.add_cover",False)==True:
+                enclosure = ET.SubElement(entry, "enclosure")
+                enclosure.set("url", rss_item["image"])
+                enclosure.set("length", "0")
+                enclosure.set("type", "image/jpeg")
             
             if full_context:
                 content = ET.SubElement(entry, "content", type="html")

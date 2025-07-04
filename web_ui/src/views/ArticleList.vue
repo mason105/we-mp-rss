@@ -38,7 +38,7 @@
 
     <a-layout-content :style="{ padding: '20px' }">
       <a-page-header 
-      :title="activeFeed ? activeFeed.name : '文章列表'" 
+      :title="activeFeed ? activeFeed.name : '全部'" 
       :subtitle="activeFeed ? '管理 ' + activeFeed.name + ' 的内容' : '管理您的公众号订阅内容'" :show-back="false">
           <template #extra>
           <a-space>

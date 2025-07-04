@@ -59,7 +59,7 @@ async def get_rss_feeds(
     # current_user: dict = Depends(get_current_user)
 ):
     rss=RSS(name=f'all_{limit}_{offset}')
-    rss_xml=rss.get_rss()
+    rss_xml=rss.get_cache()
     if rss_xml is not None  and is_update==False:
          return Response(
             content=rss_xml,
@@ -174,6 +174,7 @@ async def get_mp_articles_source(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
     is_update:bool=True,
+    params: dict = Query({}),
     # current_user: dict = Depends(get_current_user)
 ):
     rss=RSS(name=f'{feed_id}_{limit}_{offset}',ext=ext)
@@ -189,16 +190,19 @@ async def get_mp_articles_source(
         
         # 查询公众号信息
         feed = session.query(Feed)
-        query=session.query(Article)
+        query=session.query(Feed, Article).join(Article, Feed.id == Article.mp_id)
+        if params is not None:
+             query=query.filter(Article.params['key'].like(f"%{params['kw']}%") )
+
         rss_domain=cfg.get("rss.base_url",request.base_url)
         if feed_id!="all":
             feed=feed.filter(Feed.id == feed_id).first()
-            query=session.query(Article).filter(Article.mp_id == feed_id)
+            query=query.filter(Article.mp_id == feed_id)
         else:
             feed=Feed()
             feed.mp_name=cfg.get("rss.title","WeRss")
             feed.mp_intro=cfg.get("rss.description","WeRss高效订阅我的公众号")
-            feed.mp_cover=cfg.get("rss.cover",f"{rss_domain}/logo.svg")    
+            feed.mp_cover=cfg.get("rss.cover",f"{rss_domain}static/logo.svg")    
         if not feed:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -210,8 +214,9 @@ async def get_mp_articles_source(
       
         # 查询文章列表
         total = query.count()
-        articles = query.order_by(Article.publish_time.desc()).limit(limit).offset(offset).all()
-    
+        # articles = query.order_by(Article.publish_time.desc()).limit(limit).offset(offset).all()
+        articles =query.order_by(Article.publish_time.desc()).limit(limit).offset(offset).all()
+
         # 转换为RSS格式数据
         import datetime
         rss_list = [{
@@ -221,12 +226,13 @@ async def get_mp_articles_source(
             "description": article.description if article.description != "" else article.title,
             "content": article.content,
             "image": article.pic_url,
+            "mp_name":_feed.mp_name,
             "updated": datetime.datetime.fromtimestamp(article.publish_time)
-        } for article in articles]
+        } for _feed,article in articles]
         
 
         # 缓存文章内容
-        for article in articles:
+        for _feed,article in articles:
             content_data = {
                 "id": article.id,
                 "title": article.title,
@@ -234,7 +240,7 @@ async def get_mp_articles_source(
                 "publish_time": article.publish_time,
                 "mp_id": article.mp_id,
                 "pic_url": article.pic_url,
-                "mp_name": feed.mp_name
+                "mp_name": _feed.mp_name
             }
             rss.cache_content(article.id, content_data)
         
@@ -247,10 +253,26 @@ async def get_mp_articles_source(
         )
     except Exception as e:
         print(f"获取公众号文章RSS错误:",e)
-        raise e
+        return Response(
+            content=str(e),
+        )
     
 
 
+
+@feed_router.get("/{key}/{kw}/{feed_id}.{ext}", summary="带过滤条件获取公众号文章源")
+async def rss(
+    request: Request,
+    feed_id: str,
+    kw: str,
+    key: str,
+    ext: str,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    is_update:bool=True
+):
+    params={key:kw}
+    return await get_mp_articles_source(request=request,feed_id=feed_id, limit=limit,offset=offset, is_update=is_update,ext=ext,params=params)
 @feed_router.get("/{feed_id}.{ext}", summary="获取公众号文章源")
 async def rss(
     request: Request,

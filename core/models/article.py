@@ -9,7 +9,7 @@ class Article(Base):
     content = Column(Text)
     description=Column(String(800))
     status = Column(Integer,default=1)
-    publish_time = Column(Integer)
+    publish_time = Column(Integer,index=True)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)  
     is_export = Column(Integer)
