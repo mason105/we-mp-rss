@@ -174,7 +174,6 @@ async def get_mp_articles_source(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
     is_update:bool=True,
-    params: dict = Query({}),
     # current_user: dict = Depends(get_current_user)
 ):
     rss=RSS(name=f'{feed_id}_{limit}_{offset}',ext=ext)
@@ -191,9 +190,6 @@ async def get_mp_articles_source(
         # 查询公众号信息
         feed = session.query(Feed)
         query=session.query(Feed, Article).join(Article, Feed.id == Article.mp_id)
-        if params is not None:
-             query=query.filter(Article.params['key'].like(f"%{params['kw']}%") )
-
         rss_domain=cfg.get("rss.base_url",request.base_url)
         if feed_id!="all":
             feed=feed.filter(Feed.id == feed_id).first()
@@ -259,20 +255,6 @@ async def get_mp_articles_source(
     
 
 
-
-@feed_router.get("/{key}/{kw}/{feed_id}.{ext}", summary="带过滤条件获取公众号文章源")
-async def rss(
-    request: Request,
-    feed_id: str,
-    kw: str,
-    key: str,
-    ext: str,
-    limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0),
-    is_update:bool=True
-):
-    params={key:kw}
-    return await get_mp_articles_source(request=request,feed_id=feed_id, limit=limit,offset=offset, is_update=is_update,ext=ext,params=params)
 @feed_router.get("/{feed_id}.{ext}", summary="获取公众号文章源")
 async def rss(
     request: Request,

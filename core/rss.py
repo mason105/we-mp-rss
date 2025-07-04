@@ -196,7 +196,9 @@ class RSS:
                 f.write(tree_str)
         return tree_str
 
-    def generate_json(self, rss_list: dict) -> str:
+    def generate_json(self, rss_list: dict,title: str = "Mp-We-Rss", 
+                    link: str = "https://github.com/rachelos/we-mp-rss",
+                    description: str = "RSS频道", language: str = "zh-CN",image_url:str="") -> str:
         """获取JSON格式的RSS内容
         
         Args:
@@ -207,6 +209,11 @@ class RSS:
         """
 
         result = {
+            "name":title,
+            "link":link,
+            "description":description,
+            "language": language,
+            "cover":image_url,
             "items": [
                 {
                     "id": item["id"],
@@ -214,7 +221,8 @@ class RSS:
                     "description": item["description"],
                     "link": item["link"],
                     "updated": item["updated"].isoformat() if isinstance(item["updated"], datetime) else item["updated"],
-                    "content": item.get("content", "")
+                    "content": item.get("content", ""),
+                    "channel_name": item.get("mp_name", "")
                 } for item in rss_list
             ]
         }
@@ -250,7 +258,7 @@ class RSS:
         elif ext == 'atom':
             return self.generate_atom(rss_list, title=title, link=link, description=description,language=language,image_url=image_url)
         elif ext == 'json':
-            return self.generate_json(rss_list)
+            return self.generate_json(rss_list, title=title, link=link, description=description,language=language,image_url=image_url)
         else:
             raise ValueError(f"Unsupported extension: {ext}")
 
