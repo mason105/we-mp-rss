@@ -36,7 +36,7 @@ class Db:
                         pass
                     open(db_path, 'w').close()
                     
-            self.engine = create_engine(con_str,pool_size=10, max_overflow=300, pool_recycle=3600, pool_pre_ping=True)
+            self.engine = create_engine(con_str,pool_size=10, max_overflow=300, pool_recycle=3600, pool_pre_ping=True, echo=False)
             Session = sessionmaker(bind=self.engine,expire_on_commit=True)
             self._session = Session()
         except Exception as e:
@@ -73,9 +73,10 @@ class Db:
             art.content=art.content
             from core.models.base import DATA_STATUS
             art.status=DATA_STATUS.ACTIVE
-            session.add(art) 
+            session.add(art)
             # self._session.merge(art)
-            session.commit()
+            sta=session.commit()
+            
         except Exception as e:
             if "UNIQUE" in str(e) or "Duplicate entry" in str(e):
                 print_warning(f"Article already exists: {art.id}")

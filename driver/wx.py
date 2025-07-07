@@ -94,7 +94,8 @@ class Wx:
     wait_time=1
     def QRcode(self):
         return {
-            "code":f"{self.wx_login_url}?t={(time.time())}"
+            "code":f"{self.wx_login_url}?t={(time.time())}",
+            "is_exists":self.GetHasCode(),
         }
     def refresh_task(self):
         try:
