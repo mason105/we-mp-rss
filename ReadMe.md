@@ -284,10 +284,21 @@ npm run build
 # 分享交流群
 QQ:244538330
 
-# 友情链接
-[WeWe RSS](https://github.com/cooderl/wewe-rss)
+#  优质推荐
 [橙单-高质量低代码平台](https://gitee.com/orangeform/orange-admin)
-[orange-flowable](https://gitee.com/orangeform/orange-flowable)
+```
+橙单中台化低代码生成器。可完整支持多应用、多租户、多渠道、工作流 (Flowable & Activiti)、在线表单、自定义数据同步、自定义Job、多表关联、跨服务多表关联、框架技术栈自由组合等。
+```
+
+[DevOps](https://github.com/opendevops-cn/opendevops)
+```
+全球一站式DevOps、自动化运维、完全开源的云管理平台、自动化运维平台
+```
+[FastSearch](https://gitee.com/rachel_os/fastsearch)
+```
+fastsearch 一个golang实现的全文检索引擎，支持持久化和单机亿级数据毫秒级查找
+```
+
 
 
 ## 许可证
