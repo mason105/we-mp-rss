@@ -18,9 +18,11 @@
                   style="padding: 12px 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
                  <div style="display: flex; align-items: center;">
                    <img :src="Avatar(item.avatar)" width="40" style="float:left;margin-right:1rem;"/>
+                   <a-tooltip :content="item.name || item.mp_name" placement="top">
                    <a-typography-text  strong style="line-height:40px;">
                      {{ item.name || item.mp_name }}
                    </a-typography-text>
+                   </a-tooltip>
                    <a-button v-if="activeMpId === item.id" size="mini" type="text" status="danger" @click="$event.stopPropagation(); deleteMp(item.id)" >
                      <template #icon><icon-delete /></template>
                     </a-button>

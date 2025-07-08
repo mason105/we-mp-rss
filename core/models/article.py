@@ -6,11 +6,10 @@ class Article(Base):
     title = Column(String(1000))
     pic_url = Column(String(500))
     url=Column(String(500))
-    content = Column(MEDIUMTEXT)
+    content = Column(Text)
     description=Column(Text)
     status = Column(Integer,default=1)
     publish_time = Column(Integer,index=True)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)  
     is_export = Column(Integer)
-

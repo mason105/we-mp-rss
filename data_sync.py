@@ -48,10 +48,14 @@ class DatabaseSynchronizer:
             return
             
         for column in model.__table__.columns:
-            if hasattr(column.type, "__visit_name__"):
-                if column.type.__visit_name__ == "MEDIUMTEXT":
-                    from sqlalchemy import Text
-                    column.type = Text()
+            # 检查多种可能的MEDIUMTEXT表示形式
+            type_str = str(column.type).upper()
+            if (hasattr(column.type, "__visit_name__") and column.type.__visit_name__ == "MEDIUMTEXT") or \
+               "MEDIUMTEXT" in type_str or \
+               getattr(column.type, "__class__", None).__name__ == "MEDIUMTEXT":
+                from sqlalchemy import Text
+                column.type = Text()
+                self.logger.debug(f"已将列 {column.name} 的类型从 MEDIUMTEXT 映射为 Text")
     
     def sync(self):
         """同步模型到数据库"""
