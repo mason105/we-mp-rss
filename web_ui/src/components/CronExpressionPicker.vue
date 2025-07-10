@@ -104,6 +104,12 @@ defineExpose({
         <a-select v-model="hours" @change="updateExpression" style="width: 180px">
           <a-option v-for="h in 24" :key="h-1" :value="(h-1).toString()">{{ h-1 }}</a-option>
           <a-option value="*">*</a-option>
+          <a-option value="*/1">每1小时</a-option>
+          <a-option value="*/2">每2小时</a-option>
+          <a-option value="*/3">每3小时</a-option>
+          <a-option value="*/4">每3小时</a-option>
+          <a-option value="*/5">每3小时</a-option>
+          <a-option value="*/8">每8小时</a-option>
           <a-option value="*/6">每6小时</a-option>
           <a-option value="*/12">每12小时</a-option>
           <a-option value="0-12">0-12点</a-option>

@@ -198,21 +198,65 @@ class TemplateParser:
                     # Render loop
                     # print(f"DEBUG - For loop items: {items}")  # Debug
                     loop_output = []
+                    total_items = len(items)
                     for item_idx, item in enumerate(items):
                         loop_context = context.copy()
                         loop_context[loop_var] = item
-                        # print(f"DEBUG - Processing item {item_idx}: {item}")  # Debug
+                        
+                        # Add loop variable with iteration info
+                        loop_context['loop'] = {
+                            'index': item_idx + 1,
+                            'index0': item_idx,
+                            'first': item_idx == 0,
+                            'last': item_idx == total_items - 1,
+                            'length': total_items
+                        }
+                        print(f"DEBUG - Loop vars: {loop_context['loop']}")  # 调试循环变量
+                        print(f"DEBUG - not loop.last: {not (item_idx == total_items - 1)}")  # 调试条件判断
                         
                         # Render loop content with current item
                         item_output = []
-                        for part in loop_content:
+                        j = 0
+                        while j < len(loop_content):
+                            part = loop_content[j]
                             if part is None:
+                                j += 1
                                 continue
                             
-                            # print(f"DEBUG - Processing part: {repr(part)}")  # Debug
-                        
-                            if isinstance(part, str) and part.startswith('{{') and part.endswith('}}'):
-                                # Handle variable reference
+                            # Handle if conditions inside for loop
+                            if (isinstance(part, str) and 
+                                part.startswith('{% if ') and 
+                                part.endswith('%}')):
+                                condition = part[6:-2].strip()
+                                result, _ = self._evaluate_condition(condition, loop_context)
+                                
+                                # Find matching endif
+                                endif_idx = j + 1
+                                nested_depth = 1
+                                while endif_idx < len(loop_content):
+                                    inner_part = loop_content[endif_idx]
+                                    if (isinstance(inner_part, str) and 
+                                        inner_part.startswith('{% if ') and 
+                                        inner_part.endswith('%}')):
+                                        nested_depth += 1
+                                    elif (isinstance(inner_part, str) and 
+                                          inner_part.startswith('{% endif %}')):
+                                        nested_depth -= 1
+                                        if nested_depth == 0:
+                                            break
+                                    endif_idx += 1
+                                
+                                # Process if block if condition is true
+                                if result:
+                                    if_content = loop_content[j+1:endif_idx]
+                                    rendered = self._render_parts(if_content, loop_context)
+                                    item_output.append(rendered)
+                                
+                                # Skip to after endif
+                                j = endif_idx + 1
+                            
+                            # Handle variable references
+                            elif isinstance(part, str) and part.startswith('{{') and part.endswith('}}'):
                                 var_expr = part[2:-2].strip()
                                 # print(f"DEBUG - Evaluating variable: {var_expr}")  # Debug
                             
@@ -249,9 +293,12 @@ class TemplateParser:
                             
                                 # print(f"DEBUG - Variable value: {value}")  # Debug
                                 item_output.append(value)
+                                j += 1
+                            
                             else:
                                 # Handle literal text (preserve whitespace and newlines)
                                 item_output.append(str(part))
+                                j += 1
                         
                         rendered_item = ''.join(item_output)
                         # print(f"DEBUG - Rendered item {item_idx}:\n{repr(rendered_item)}")  # Debug

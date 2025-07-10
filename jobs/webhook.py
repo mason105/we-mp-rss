@@ -1,6 +1,7 @@
 from core.models.message_task import MessageTask
 from core.models.feed import Feed
 from core.models.article import Article
+from core.print import print_success
 from core.notice import notice
 from dataclasses import dataclass
 from core.lax import TemplateParser
@@ -82,6 +83,7 @@ def call_webhook(hook: MessageWebHook) -> str:
         return 
     # 发送webhook请求
     import requests
+    print_success(f"发送webhook请求{payload}")
     try:
         response = requests.post(
             hook.task.web_hook_url,

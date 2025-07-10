@@ -34,7 +34,16 @@ Eval表达式示例:
 6. 正则提取: {{=__import__('re').search(r'\d+', str(articles[0]['publish_time'])).group() if articles else ''}}
 7. 当前时间: {{=__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}}
 """
-
+feed_template = """
+{
+        "feed": "{{feed.mp_name}}",
+        "articles": [
+            {% for article in articles %}
+            {"title": "{{article.title}}", "pub_date": "{{article.pub_date}}"}
+            {% if not loop.last %},{% endif %}{{loop.last}}
+            {% endfor %}
+        ]
+    }"""
 # 从数据库获取真实Feed和Article数据
 session = DB.get_session()
 from datetime import datetime
@@ -55,9 +64,50 @@ context4 = {
     ]
 }
 print("示例4数据:", context4)
-parser4 = TemplateParser(feed_template)
-result4 = parser4.render(context4)
-print(result4)
+# 添加调试信息
+print("\n=== 调试信息 ===")
+print("模板内容:")
+print(feed_template)
+print("\n上下文数据:")
+print(context4)
+
+try:
+    parser4 = TemplateParser(feed_template)
+    print("\n开始解析模板...")
+    result4 = parser4.render(context4)
+    print("\n解析结果:")
+    print(result4)
+except Exception as e:
+    print(f"\n解析出错: {str(e)}")
+    raise
+# 示例5: for循环内部if条件判断
+print("\n=== For循环内部if条件示例 ===")
+
+nested_template = """
+<ul>
+    {% for user in users %}
+        <li>
+            {{ user.name }} ({{ user.age }})
+            {% if user.age >= 18 %}
+                - Adult
+                {% if user.is_vip %}
+                    <span class="vip">VIP</span>
+                {% endif %}
+            {% else %}
+                - Minor
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+"""
+
+users = [
+    {"name": "Alice", "age": 25, "is_vip": True},
+    {"name": "Bob", "age": 17, "is_vip": False},
+    {"name": "Charlie", "age": 30, "is_vip": True},
+    {"name": "David", "age": 16, "is_vip": False}
+]
+
 from core.notice import notice
 from core.config import cfg
 notice(webhook_url=cfg.get("notice.dingding"),title="订阅消息",text=result4)

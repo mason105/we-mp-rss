@@ -2,7 +2,7 @@
 <img src="static/logo.svg" alt="We-MP-RSS Logo" width="20%">
 <h1>WeRSS - 微信公众号订阅助手</h1>
 
-[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)]()
+[![Python Version](https://img.shields.io/badge/python-3.13.1+-red.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)]()
 
 快速运行
@@ -17,9 +17,21 @@ docker run -d  --name we-mp-rss  -p 8001:8001   rachelos/we-mp-rss:latest
 docker run -d  --name we-mp-rss  -p 8001:8001   docker.1ms.run/rachelos/we-mp-rss:latest
 ```
 </div>
-
+<center>
+ <br/>
+ <img src="https://github.com/user-attachments/assets/cbe924f2-d8b0-48b0-814e-7c06ccb1911c" height="60" />
+    <img src="https://github.com/user-attachments/assets/6997a236-3df3-49d5-98a4-514f6d1a02c4" height="60" />
+    <br />
+    <br />
+    <a href="https://github.com/RSSNext/Folo/stargazers"><img src="https://img.shields.io/github/stars/RSSNext/Follow?color=ffcb47&labelColor=black&style=flat-square&logo=github&label=Stars" /></a>
+    <a href="https://github.com/RSSNext/Folo/graphs/contributors"><img src="https://img.shields.io/github/contributors/RSSNext/Folo?style=flat-square&logo=github&label=Contributors&labelColor=black" /></a>
+    <a href="https://status.follow.is/" target="_blank"><img src="https://status.follow.is/api/badge/18/uptime?color=%2344CC10&labelColor=black&style=flat-square"/></a>
+    <a href="https://github.com/RSSNext/Folo/releases"><img src="https://img.shields.io/github/downloads/RSSNext/Folo/total?color=369eff&labelColor=black&logo=github&style=flat-square&label=Downloads" /></a>
+    <a href="https://x.com/intent/follow?screen_name=folo_is"><img src="https://img.shields.io/badge/Follow-blue?color=1d9bf0&logo=x&labelColor=black&style=flat-square" /></a>
+    <a href="https://discord.gg/followapp" target="_blank"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Finvites%2Ffollowapp%3Fwith_counts%3Dtrue&query=approximate_member_count&color=5865F2&label=Discord&labelColor=black&logo=discord&logoColor=white&style=flat-square"/></a>
+    <br />
 一个用于订阅和管理微信公众号内容的工具，提供RSS订阅功能。
-
+</center>
 <p align="center">
   <a href="https://github.com/DIYgod/sponsors">
     <img src="https://raw.githubusercontent.com/DIYgod/sponsors/main/sponsors.wide.svg" />
