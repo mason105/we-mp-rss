@@ -1,4 +1,5 @@
 import threading
+import random
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from typing import Callable, Any, Optional
@@ -81,6 +82,25 @@ class TaskScheduler:
                     error_msg = f"Invalid cron expression: {cron_expr}. Expected 5 or 6 fields."
                     logger.error(error_msg)
                     raise ValueError(error_msg)
+                
+                # 处理随机时间范围
+                def parse_random_field(field: str, field_name: str):
+                    if '~' in field:
+                        try:
+                            min_val, max_val = map(int, field.split('~'))
+                            if min_val > max_val:
+                                raise ValueError(f"Invalid {field_name} range: {field}")
+                            return lambda: str(random.randint(min_val, max_val))
+                        except ValueError as e:
+                            raise ValueError(f"Invalid {field_name} format: {field}") from e
+                    return field
+                
+                second = parse_random_field(second, 'second')
+                minute = parse_random_field(minute, 'minute')
+                hour = parse_random_field(hour, 'hour')
+                day = parse_random_field(day, 'day')
+                month = parse_random_field(month, 'month')
+                day_of_week = parse_random_field(day_of_week, 'day_of_week')
                 
                 trigger = CronTrigger(
                     second=second,
