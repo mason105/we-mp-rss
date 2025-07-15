@@ -136,11 +136,13 @@ onMounted(() => {
     <div class="message-task-list">
       <div class="header">
         <h2>消息任务列表</h2>
+        <a-tooltip content="点击应用按钮后任务才会生效">
+          <a-button type="primary" @click="FreshJob">应用</a-button>
+        </a-tooltip>
         <a-button type="primary" @click="handleAdd">添加消息任务</a-button>
-        <a-button type="primary" @click="FreshJob">应用</a-button>
       </div>
       <a-alert type="info" closable>
-        注意：只有添加了任务消息才会定时执行更新任务
+        注意：只有添加了任务消息才会定时执行更新任务，点击应用按钮后任务才会生效
       </a-alert>
 
       <a-table

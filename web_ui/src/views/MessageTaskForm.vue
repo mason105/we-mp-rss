@@ -80,10 +80,10 @@ const handleSubmit = async () => {
     
     if (isEditMode.value && taskId.value) {
       await updateMessageTask(taskId.value, submitData)
-      Message.success('更新任务成功')
+      Message.success('更新任务成功，点击应用按钮后任务才会生效')
     } else {
       await createMessageTask(submitData)
-      Message.success('创建任务成功')
+      Message.success('创建任务成功，点击应用按钮后任务才会生效')
     }
     setTimeout(() => {
       router.push('/message-tasks')
