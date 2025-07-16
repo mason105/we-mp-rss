@@ -18,7 +18,7 @@
                   style="padding: 12px 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
                  <div style="display: flex; align-items: center;">
                    <img :src="Avatar(item.avatar)" width="40" style="float:left;margin-right:1rem;"/>
-                   <a-tooltip :content="item.name || item.mp_name" placement="top">
+                   <a-tooltip :content="item.mp_intro" placement="top" color="#fff">
                    <a-typography-text  strong style="line-height:40px;">
                      {{ item.name || item.mp_name }}
                    </a-typography-text>
@@ -461,6 +461,7 @@ const fetchMpList = async () => {
       id: item.id || item.mp_id,
       name: item.name || item.mp_name,
       avatar: item.avatar || item.mp_cover || '',
+      mp_intro: item.mp_intro || item.mp_intro || '',
       article_count: item.article_count || 0
     }))
     mpPagination.value.total = res.total || 0

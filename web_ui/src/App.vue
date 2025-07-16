@@ -22,10 +22,10 @@
           <a-link href="https://cloud.tencent.com/act/cps/redirect?redirect=2446&cps_key=f8ce741e7b24cd68141ab2115122ea94&from=console" target="_blank" style="margin-right: 20px;">云部署</a-link>
         </a-tooltip>
         <a-tooltip content="您的支持是作者的最大动力，来一杯咖啡吧" position="bottom">
-          <a-link href="https://www.paypal.com/ncp/payment/PUA72WYLAV5KW" target="_blank" style="margin-right: 20px;">赞助</a-link>
+          <a-link @click="showSponsorModal" style="margin-right: 20px; cursor: pointer;" type="text">支持</a-link>
         </a-tooltip>
+        <a-link href="https://www.paypal.com/ncp/payment/PUA72WYLAV5KW" target="_blank" style="margin-right: 20px;">赞助</a-link>
         
-        <a-link @click="showSponsorModal" style="margin-right: 20px; cursor: pointer;" type="text">支持</a-link>
       
         <a-dropdown position="br" trigger="click">
           <div class="user-info">

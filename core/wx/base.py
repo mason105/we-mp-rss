@@ -7,6 +7,7 @@ from core.models.feed import Feed
 from .cfg import cfg,wx_cfg
 from core.print import print_error,print_info
 from core.rss import RSS
+from driver.success import WX_LOGIN_ED,WX_LOGIN_INFO
 # 定义基类
 class WxGather:
     articles=[]
@@ -45,6 +46,7 @@ class WxGather:
     def FillBack(self,CallBack=None,data=None,Ext_Data=None):
         if CallBack is not None:
             if data is not  None:
+                WX_LOGIN_ED=True
                 from core.models import Article
                 from datetime import datetime
                 art={
@@ -137,6 +139,7 @@ class WxGather:
         self.Over()
         if code=="Invalid Session":
             from jobs.notice import send_wx_code
+            WX_LOGIN_ED=False
             send_wx_code(f"公众号平台登录失效,请重新登录")
             pass
         raise Exception(error)
