@@ -17,7 +17,7 @@ class MpsWeb(WxGather):
             from driver.wxarticle import Web as App
             r = App.get_article_content(url)
             if r!=None:
-                text = r.content
+                text = r.get("content","")
                 if text is None:
                     return
                 if "当前环境异常，完成验证后即可继续访问" in text:
