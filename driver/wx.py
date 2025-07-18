@@ -8,6 +8,8 @@ from .success import Success
 from selenium.webdriver.common.action_chains import ActionChains
 import time
 import os
+from driver.success import WX_LOGIN_ED
+from driver.store import Store
 import re
 from threading import Timer
 from .cookies import expire
@@ -22,6 +24,8 @@ class Wx:
     WX_HOME="https://mp.weixin.qq.com/cgi-bin/home"
     wx_login_url="static/wx_qrcode.png"
     lock_file_path="data/.lock"
+    CallBack=None
+    Notice=None
     def __init__(self):
         self.lock_path=os.path.dirname(self.lock_file_path)
         self.refresh_interval=3660*24
@@ -117,13 +121,30 @@ class Wx:
                 Timer(self.refresh_interval, self.schedule_refresh).start()
             except Exception as e:
                 raise Exception(f"浏览器已经关闭")
-    def Token(self):
-        if 'controller' not in locals():
-            controller = FirefoxController()
-            self.controller=controller
-        self.controller.start_browser()
-        self.controller.open_url(self.WX_HOME)
-        self.schedule_refresh()
+    def Token(self,CallBack=None):
+        try:
+            self.CallBack=CallBack
+            if WX_LOGIN_ED==False:
+                return
+            if 'controller' not in locals():
+                controller = FirefoxController()
+                self.controller=controller
+            from driver.token import wx_cfg
+            token=wx_cfg.get("token", "")
+            self.controller.start_browser()
+            self.controller.open_url(self.WX_HOME)
+            cookie=Store.load()
+            self.controller.add_cookies(cookie)
+            self.controller.add_cookie({"name":"token","value":str(token)})
+
+            qrcode = controller.driver.find_element(By.ID, "jumpUrl")
+            wait = WebDriverWait(controller.driver, self.wait_time)
+            wait.until(EC.visibility_of(qrcode))
+            qrcode.click()
+            time.sleep(5)
+            self.Call_Success()
+        except Exception as e:
+            print_error(f"未登录{str(e)}")
     def isLock(self):             
         if self.isLock:
             if os.path.exists(self.wx_login_url):
@@ -226,7 +247,6 @@ class Wx:
                 self.Clean()
                 self.Close()
             else:
-                # self.schedule_refresh()
                 pass
         return self.SESSION
     def format_token(self,cookies:any,token=""):
@@ -249,8 +269,6 @@ class Wx:
                 'expiry': cookie_expiry
             }
     def Call_Success(self):
-        print("登录成功！")
-        self.HasLogin=True
         # 获取token
         token = self.extract_token_from_requests(self.controller.driver)
         
@@ -258,8 +276,13 @@ class Wx:
         cookies = self.controller.driver.get_cookies()
         # print("\n获取到的Cookie:")
         self.SESSION=self.format_token(cookies,token)
-        self.HasLogin=True
+        self.HasLogin=False if self.SESSION["expiry"] is None else True
         self.Clean()
+        if  self.HasLogin:
+            print_success("登录成功！")
+            Store.save(cookies)
+        else:
+            print_warning("未登录！")
         
         # print(cookie_expiry)
         if self.CallBack is not None:

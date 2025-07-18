@@ -19,10 +19,9 @@ class WXArticleFetcher:
         """初始化文章获取器"""
         self.wait_timeout = wait_timeout
         self.controller = FirefoxController()
-        self.controller.start_browser()
         if not self.controller:
             raise Exception("WebDriver未初始化或未登录")
-        self.driver = self.controller.driver
+       
         
     def extract_biz_from_source(self,url:str) -> str:
         """从URL或页面源码中提取biz参数
@@ -70,7 +69,8 @@ class WXArticleFetcher:
         Raises:
             Exception: 如果未登录或获取内容失败
         """
-            
+        self.controller.start_browser()    
+        self.driver = self.controller.driver
         self.controller.open_url(url)
         driver=self.driver
         wait = WebDriverWait(driver, self.wait_timeout)

@@ -8,6 +8,8 @@ from core.task import TaskScheduler
 from core.models.feed import Feed
 from core.config import cfg,DEBUG
 from core.print import print_info,print_success,print_error
+from driver.wx import WX_API
+from driver.success import Success
 wx_db=db.Db()
 wx_db.init(cfg.get("db"))
 def fetch_all_article():
@@ -80,7 +82,7 @@ def start_job():
     #开启自动同步未同步 文章任务
     from jobs.fetch_no_article import start_sync_content
     start_sync_content()
-
+    
     from .taskmsg import get_message_task
     tasks=get_message_task()
     if not tasks:

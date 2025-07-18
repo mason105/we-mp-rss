@@ -1,10 +1,10 @@
 <template>
   <a-spin :loading="fullLoading" tip="正在刷新..." size="large">
   <a-layout class="article-list">
-    <a-layout-sider :width=380
-      :style="{ background: '#fff', padding: '0', borderRight: '1px solid #eee', display: 'flex', flexDirection: 'column' }">
-      <a-card :bordered="false" title="公众号"
-        :headStyle="{ padding: '12px 16px', borderBottom: '1px solid #eee', background: '#fff', zIndex: 1 }">
+    <a-layout-sider :width=300
+      :style="{ background: '#fff', padding: '0', borderRight: '1px solid #eee', display: 'flex', flexDirection: 'column' ,border:0}">
+      <a-card :bordered="false" title="公众号" 
+        :headStyle="{ padding: '12px 16px', borderBottom: '1px solid #eee', background: '#fff', zIndex: 1 ,border:0}">
         <template #extra>
           <a-button type="primary" @click="showAddModal">
             <template #icon><icon-plus /></template>
@@ -15,11 +15,11 @@
             <a-list :data="mpList" :loading="mpLoading" bordered>
               <template #item="{ item, index }">
                 <a-list-item @click="handleMpClick(item.id)" :class="{ 'active-mp': activeMpId === item.id }"
-                  style="padding: 12px 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                  style="padding: 9px 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
                  <div style="display: flex; align-items: center;">
                    <img :src="Avatar(item.avatar)" width="40" style="float:left;margin-right:1rem;"/>
-                   <a-tooltip :content="item.mp_intro" placement="top" color="#fff">
-                   <a-typography-text  strong style="line-height:40px;">
+                   <a-tooltip :content="item.mp_intro||item.mp_name" placement="top" color="#fff">
+                   <a-typography-text  strong style="line-height:32px;">
                      {{ item.name || item.mp_name }}
                    </a-typography-text>
                    </a-tooltip>
@@ -30,15 +30,12 @@
                 </a-list-item>
               </template>
             </a-list>
-            <a-pagination v-model:current="mpPagination.current" v-model:page-size="mpPagination.pageSize" style="margin-top: 1rem;"
-              :total="mpPagination.total" :page-size-options="mpPagination.pageSizeOptions"
-              jump-next jump-prev show-quick-jumper :show-size-changer="true" size="small" show-total="true"
-              @change="handleMpPageChange" />
+            <a-pagination :total="mpPagination.total" simple  @change="handleMpPageChange" :show-total="true" style="margin-top: 1rem;"/>
         </div>
       </a-card>
     </a-layout-sider>
 
-    <a-layout-content :style="{ padding: '20px', width: '100%' }" >
+    <a-layout-content :style="{ padding: '20px', width: '100%'}" >
       <a-page-header 
       :title="activeFeed ? activeFeed.name : '全部'" 
       :subtitle="activeFeed ? '管理 ' + activeFeed.name + ' 的内容' : '管理您的公众号订阅内容'" :show-back="false">
@@ -88,7 +85,7 @@
         </a-form>
       </a-modal>
 
-      <a-card>
+      <a-card style="border:0">
         <div class="search-bar">
           <a-input-search v-model="searchText" placeholder="搜索文章标题" @search="handleSearch" @keyup.enter="handleSearch" allow-clear />
         </div>
@@ -161,10 +158,10 @@ const mpPagination = ref({
   current: 1,
   pageSize: 10,
   total: 0,
-  showPageSize: true,
-  showJumper: true,
+  showPageSize: false,
+  showJumper: false,
   showTotal: true,
-  pageSizeOptions: [10]
+  pageSizeOptions: [5, 10, 15]
 })
 const searchText = ref('')
 const filterStatus = ref('')
@@ -456,7 +453,7 @@ const fetchMpList = async () => {
       page: mpPagination.value.current - 1,
       pageSize: mpPagination.value.pageSize
     })
-
+    
     mpList.value = res.list.map(item => ({
       id: item.id || item.mp_id,
       name: item.name || item.mp_name,
@@ -464,6 +461,14 @@ const fetchMpList = async () => {
       mp_intro: item.mp_intro || item.mp_intro || '',
       article_count: item.article_count || 0
     }))
+    // 添加'全部'选项
+    mpList.value.unshift({
+      id: '',
+      name: '全部',
+      avatar: '/static/logo.svg',
+      mp_intro: '显示所有公众号文章',
+      article_count: res.total || 0
+    });
     mpPagination.value.total = res.total || 0
   } catch (error) {
     console.error('获取公众号列表错误:', error)

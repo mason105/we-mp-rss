@@ -107,7 +107,8 @@ class MpsWeb(WxGather):
                                 # info = '"{}","{}","{}","{}"'.format(str(item["aid"]), item['title'], item['link'], str(item['create_time']))
                                 for item in publish_info["appmsgex"]:
                                     if Gather_Content:
-                                        item["content"] = self.content_extract(item['link'])
+                                        if not super().HasGathered(item["aid"]):
+                                            item["content"] = self.content_extract(item['link'])
                                     else:
                                         item["content"] = ""
                                     item["id"] = item["aid"]

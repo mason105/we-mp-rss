@@ -11,10 +11,19 @@ from driver.success import WX_LOGIN_ED,WX_LOGIN_INFO
 # 定义基类
 class WxGather:
     articles=[]
+    aids=[]
     def all_count(self):
         if getattr(self, 'articles', None) is not None:
             return len(self.articles)
         return 0
+    def RecordAid(self,aid:str):
+        self.aids.append(aid)
+        pass
+    def HasGathered(self,aid:str):
+        if aid in self.aids:
+            return True
+        self.RecordAid(aid)
+        return False
     def Model(self):
         if cfg.get("gather.model","web")=="web":
             from core.wx import MpsWeb
@@ -131,7 +140,8 @@ class WxGather:
         _cookies=[{'name': c.name, 'value': c.value, 'domain': c.domain,'expiry':c.expires,'expires':c.expires} for c in self._cookies]
         _cookies.append({'name':'token','value':self.token})
         if len(_cookies) > 0:   
-            DoSuccess(_cookies)
+            # DoSuccess(_cookies)
+            pass
         if CallBack is not None:
             CallBack(item)
         pass

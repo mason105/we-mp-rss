@@ -4,6 +4,7 @@ from core.wx.base import WxGather
 from time import sleep
 from core.print import print_success,print_error
 import random
+from driver.wxarticle import Web
 def fetch_articles_without_content():
     """
     查询content为空的文章，调用微信内容提取方法获取内容并更新数据库
@@ -28,7 +29,10 @@ def fetch_articles_without_content():
             print(f"正在处理文章: {article.title}, URL: {url}")
             
             # 获取内容
-            content = ga.content_extract(url)
+            if cfg.get("gather.content_mode","web"):
+                content=Web.get_article_content(url)
+            else:
+                content = ga.content_extract(url)
             sleep(random.randint(3,10))
             if content:
                 # 更新内容

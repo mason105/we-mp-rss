@@ -82,6 +82,8 @@ app.include_router(feeds_router)
 # 静态文件服务配置
 app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+from core.res.avatar import files_dir
+app.mount("/files", StaticFiles(directory=files_dir), name="files")
 @app.get("/{path:path}",tags=['默认'],include_in_schema=False)
 async def serve_vue_app(request: Request, path: str):
     """处理Vue应用路由"""

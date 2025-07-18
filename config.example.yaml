@@ -40,7 +40,7 @@ debug: False
 max_page: ${MAX_PAGE:-5}
 
 rss:
-  #RSS域名地址：如https://www.xxx.com
+  #RSS域名地址：如https://www.xxx.com/
   base_url: ${RSS_BASE_URL:-}
   #是否为本地RSS链接，默认True，当为False时直接出外部链接
   local: ${RSS_LOCAL:-False}
@@ -79,11 +79,14 @@ gather:
   content_auto_check: ${GATHER.CONTENT_AUTO_CHECK:-False}
   #自动检查未采集文章内容的时间间隔 单位秒默认59分钟 允许值 1-59分钟之间 默认59分钟
   content_auto_interval: ${GATHER.CONTENT_AUTO_INTERVAL:-59}
-
+  #内容修正模式，默认web 允许值 web、api
+  content_mode: ${GATHER.CONTENT_MODE:-web}
 #安全配置
 safe:
     # 需要隐藏的配置信息，用逗号分隔 如：db,secret,token等 
     hide_config: "${SAFE_HIDE_CONFIG:-db,secret,token,notice.wechat,notice.feishu,notice.dingding}"
+    # 授权加密KEY
+    lic_key: "${SAFE_LIC_KEY:-RACHELOS}"
 log:
   #日志文件路径，默认为空字符串，表示不输出到文件。如果要输出到文件，可以指定一个路径如：/var/log/we-mp-rss.log 如果为空就不纪录
    file: ${LOG_FILE:-}

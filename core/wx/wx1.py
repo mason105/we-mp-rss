@@ -102,7 +102,8 @@ class MpsApi(WxGather):
                         time.sleep(random.randint(1,3))
                         # info = '"{}","{}","{}","{}"'.format(str(item["aid"]), item['title'], item['link'], str(item['create_time']))
                         if Gather_Content:
-                            item["content"] = self.content_extract(item['link'])
+                            if not super().HasGathered(item["aid"]):
+                                item["content"] = self.content_extract(item['link'])
                         else:
                             item["content"] = ""
                         item["id"] = item["aid"]
