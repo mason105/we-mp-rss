@@ -128,8 +128,10 @@ class WXArticleFetcher:
             # raise Exception(f"文章内容获取失败: {str(e)}")
             print(f"文章内容获取失败: {str(e)}")
         try:
-            wait.until(EC.presence_of_element_located((By.ID, "js_like_profile_bar")))
-
+            # 等待关键元素加载
+            wait.until(
+                EC.presence_of_element_located((By.ID, "js_like_profile_bar"))
+            )
             # 查找<div class="wx_follow_hd">元素
             ele_logo = driver.find_element(By.XPATH, '//*[@id="js_like_profile_bar"]/div/div/div/div/div[1]/span/img')
             # 获取<img>标签的src属性
