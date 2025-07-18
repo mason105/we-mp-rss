@@ -130,14 +130,14 @@ class WXArticleFetcher:
         try:
             # 等待关键元素加载
             wait.until(
-                EC.presence_of_element_located((By.ID, "js_like_profile_bar"))
+                EC.presence_of_element_located((By.CLASS_NAME, "wx_follow_avatar"))
             )
             # 查找<div class="wx_follow_hd">元素
-            ele_logo = driver.find_element(By.XPATH, '//*[@id="js_like_profile_bar"]/div/div/div/div/div[1]/span/img')
+            ele_logo = driver.find_element(By.CLASS_NAME, 'wx_follow_avatar').find_element(By.TAG_NAME, 'img')
             # 获取<img>标签的src属性
             logo_src = ele_logo.get_attribute('src')
 
-            ele_name = driver.find_element(By.XPATH, '//*[@id="js_wx_follow_nickname"]')
+            ele_name = driver.find_element(By.CLASS_NAME, 'wx_follow_bd')
             title= ele_name.text
             info["mp_info"]={
                 "mp_name":title,
