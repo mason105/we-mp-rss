@@ -136,7 +136,6 @@ class WXArticleFetcher:
             ele_logo = driver.find_element(By.CLASS_NAME, 'wx_follow_avatar').find_element(By.TAG_NAME, 'img')
             # 获取<img>标签的src属性
             logo_src = ele_logo.get_attribute('src')
-
             ele_name = driver.find_element(By.CLASS_NAME, 'wx_follow_bd')
             title= ele_name.text
             info["mp_info"]={
