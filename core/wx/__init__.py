@@ -1,5 +1,6 @@
 from .wx1 import *
 from .wx2 import *
+from .wx3 import *
 from .base import WxGather
 ga=WxGather()
 def search_Biz(kw:str="",limit=5,offset=0):

@@ -288,6 +288,8 @@ class FirefoxController:
     def start_browser(self, headless=True):
         """启动浏览器"""
         try:
+            if hasattr(self, 'driver'):
+                return self.driver
             self._install_firefox()
             self._setup_driver()
             

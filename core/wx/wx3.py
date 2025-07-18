@@ -9,15 +9,15 @@ from .base import WxGather
 from core.print import print_error
 from core.log import logger
 # 继承 BaseGather 类
-class MpsWeb(WxGather):
+class MpsAppMsg(WxGather):
 
     # 重写 content_extract 方法
     def content_extract(self,  url):
         try:
-            from driver.wxarticle import Web as App
-            r = App.get_article_content(url)
-            if r!=None:
-                text = r.content
+            session=self.session
+            r = session.get(url, headers=self.headers)
+            if r.status_code == 200:
+                text = r.text
                 if text is None:
                     return
                 if "当前环境异常，完成验证后即可继续访问" in text:

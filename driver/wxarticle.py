@@ -102,6 +102,14 @@ class WXArticleFetcher:
             )
             content = content_element.get_attribute("innerHTML")
             
+
+            # 查找<div class="wx_follow_hd">元素
+            ele_logo = driver.find_element(By.XPATH, '//*[@id="js_like_profile_bar"]/div/div/div/div/div[1]/span/img')
+            # 获取<img>标签的src属性
+            logo_src = ele_logo.get_attribute('src')
+
+            ele_name = driver.find_element(By.XPATH, '//*[@id="js_wx_follow_nickname"]')
+            title= ele_name.text
             images = [
                 img.get_attribute("data-src") or img.get_attribute("src")
                 for img in content_element.find_elements(By.TAG_NAME, "img")
@@ -113,15 +121,21 @@ class WXArticleFetcher:
                 "publish_time": publish_time,
                 "content": content,
                 "images": images,
-                "biz": self.extract_biz_from_source(url)
+                "mp_info":{
+                 "mp_name":title,   
+                "logo":logo_src,
+                "biz": self.extract_biz_from_source(url),
+                }
             }
             
         except Exception as e:
-            raise Exception(f"文章内容获取失败: {str(e)}")
-    def close(self):
+            # raise Exception(f"文章内容获取失败: {str(e)}")
+            print(f"文章内容获取失败: {str(e)}")
+        return None
+    def Close(self):
         """关闭浏览器"""
-        if self.controller:
-            self.controller.close()
+        if hasattr(self, 'controller'):
+            self.controller.Close()
         else:
             print("WXArticleFetcher未初始化或已销毁")
     def __del__(self):
