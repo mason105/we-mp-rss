@@ -67,7 +67,7 @@ class WxGather:
                     "title":data['title'],
                     "url":data['link'],
                     "pic_url":data['cover'],
-                    "content":data['content'],
+                    "content":data.get("content",""),
                     "publish_time":data['update_time'],
                 }
                 if 'digest' in data:

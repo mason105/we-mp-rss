@@ -69,6 +69,17 @@ class WXArticleFetcher:
         Raises:
             Exception: 如果未登录或获取内容失败
         """
+        info={
+                "title": "",
+                "publish_time": "",
+                "content": "",
+                "images": "",
+                "mp_info":{
+                "mp_name":"",   
+                "logo":"",
+                "biz": "",
+                }
+            }
         self.controller.start_browser()    
         self.driver = self.controller.driver
         self.controller.open_url(url)
@@ -102,8 +113,23 @@ class WXArticleFetcher:
             )
             content = content_element.get_attribute("innerHTML")
             
-            wait.until(EC.presence_of_element_located(By.ID, "js_like_profile_bar"))
-            
+            images = [
+                img.get_attribute("data-src") or img.get_attribute("src")
+                for img in content_element.find_elements(By.TAG_NAME, "img")
+                if img.get_attribute("data-src") or img.get_attribute("src")
+            ]
+            info["title"]=title
+            info["author"]=author
+            info["publish_time"]=publish_time
+            info["content"]=content
+            info["images"]=images
+
+        except Exception as e:
+            # raise Exception(f"文章内容获取失败: {str(e)}")
+            print(f"文章内容获取失败: {str(e)}")
+        try:
+            wait.until(EC.presence_of_element_located((By.ID, "js_like_profile_bar")))
+
             # 查找<div class="wx_follow_hd">元素
             ele_logo = driver.find_element(By.XPATH, '//*[@id="js_like_profile_bar"]/div/div/div/div/div[1]/span/img')
             # 获取<img>标签的src属性
@@ -111,28 +137,16 @@ class WXArticleFetcher:
 
             ele_name = driver.find_element(By.XPATH, '//*[@id="js_wx_follow_nickname"]')
             title= ele_name.text
-            images = [
-                img.get_attribute("data-src") or img.get_attribute("src")
-                for img in content_element.find_elements(By.TAG_NAME, "img")
-                if img.get_attribute("data-src") or img.get_attribute("src")
-            ]
-            
-            return {
-                "title": title,
-                "publish_time": publish_time,
-                "content": content,
-                "images": images,
-                "mp_info":{
-                 "mp_name":title,   
+            info["mp_info"]={
+                "mp_name":title,
                 "logo":logo_src,
-                "biz": self.extract_biz_from_source(url),
-                }
+                "biz": self.extract_biz_from_source(url), 
             }
-            
         except Exception as e:
             # raise Exception(f"文章内容获取失败: {str(e)}")
-            print(f"文章内容获取失败: {str(e)}")
-        return None
+            print(f"获取公众号信息失败: {str(e)}")    
+       
+        return info
     def Close(self):
         """关闭浏览器"""
         if hasattr(self, 'controller'):
