@@ -6,6 +6,7 @@ import yaml
 import re
 from bs4 import BeautifulSoup
 from .base import WxGather
+from core.print import print_error
 from core.log import logger
 # 继承 BaseGather 类
 class MpsApi(WxGather):
@@ -19,6 +20,8 @@ class MpsApi(WxGather):
                 text = r.text
                 if text is None:
                     return
+                if "当前环境异常，完成验证后即可继续访问" in text:
+                    print_error("当前环境异常，完成验证后即可继续访问")
                 soup = BeautifulSoup(text, 'html.parser')
                 # 找到内容
                 js_content_div = soup.find('div', {'id': 'js_content'})
@@ -120,6 +123,6 @@ class MpsApi(WxGather):
                 print(f"Request error: {e}")
                 break
             finally:
-                super().Item_Over(item={Mps_id:Mps_id,Mps_title:Mps_title},CallBack=Item_Over_CallBack)
+                super().Item_Over(item={"mps_id":Mps_id,"mps_title":Mps_title},CallBack=Item_Over_CallBack)
         super().Over(CallBack=Over_CallBack)
         pass
