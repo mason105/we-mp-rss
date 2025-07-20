@@ -25,10 +25,11 @@ class WxGather:
         self.RecordAid(aid)
         return False
     def Model(self):
-        if cfg.get("gather.model","web")=="app":
+        type=cfg.get("gather.model","web")
+        if type=="app":
             from core.wx import MpsAppMsg
             wx=MpsAppMsg()
-        if cfg.get("gather.model","web")=="web":
+        if type=="web":
             from core.wx import MpsWeb
             wx=MpsWeb()
         else:
