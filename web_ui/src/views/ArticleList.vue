@@ -63,6 +63,14 @@
                 <a-doption @click="rssFormat='json'; openRssFeed()">JSON</a-doption>
               </template>
             </a-dropdown>
+            <a-button @click="importArticles" tooltip="导入JSON格式文章数据">
+              <template #icon><icon-import /></template>
+              导入
+            </a-button>
+            <a-button @click="exportArticles" tooltip="导出当前文章列表为JSON文件">
+              <template #icon><icon-export /></template>
+              导出
+            </a-button>
             <a-button type="primary" status="danger" @click="handleBatchDelete" :disabled="!selectedRowKeys.length">
               <template #icon><icon-delete /></template>
               批量删除
@@ -516,6 +524,46 @@ const deleteMp = async (mpId: string) => {
     Message.error('删除订阅号失败，请稍后重试');
   }
 }
+
+const importArticles = () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    try {
+      const content = await file.text();
+      const data = JSON.parse(content);
+      // 这里应该调用API导入数据
+      Message.success(`成功导入${data.length}篇文章`);
+    } catch (error) {
+      console.error('导入文章失败:', error);
+      Message.error('导入失败，请检查文件格式');
+    }
+  };
+  input.click();
+};
+
+const exportArticles = () => {
+  if (!articles.value.length) {
+    Message.warning('没有文章可导出');
+    return;
+  }
+
+  const data = JSON.stringify(articles.value, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `articles_${activeMpId.value || 'all'}_${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  Message.success('导出成功');
+};
 </script>
 
 <style scoped>

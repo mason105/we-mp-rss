@@ -9,6 +9,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 from selenium.common.exceptions import WebDriverException
 import json
 class FirefoxController:
+    isClose=True
     def __init__(self):
         self.system = platform.system().lower()
         self.driver_path = None
@@ -288,8 +289,6 @@ class FirefoxController:
     def start_browser(self, headless=True):
         """启动浏览器"""
         try:
-            if hasattr(self, 'driver'):
-                return self.driver
             self._install_firefox()
             self._setup_driver()
             
@@ -306,6 +305,7 @@ class FirefoxController:
             # self.driver.set_window_size(100, 100)
             # if self.system == "windows":
             #     self.driver.set_window_position(-1000, 1000)
+            self.isClose=False
             return self.driver
         except WebDriverException as e:
             print(f"浏览器启动失败: {str(e)}")
@@ -316,15 +316,22 @@ class FirefoxController:
         self.Close()
     def open_url(self, url):
         """打开指定URL"""
-        if not hasattr(self, 'driver'):
-            raise Exception("浏览器未启动，请先调用start_browser()")
-        self.driver.get(url)
+        if self.isClose:
+            self.start_browser()
+        try:
+            self.driver.get(url)
+        except WebDriverException as e:
+            print(f"打开URL失败: {str(e)}")
+            print(e)
+        except Exception as e:
+            print(f"打开URL失败: {str(e)}")
 
     def Close(self):
         """关闭浏览器"""
         self.HasLogin= False
         if hasattr(self, 'driver'):
             self.driver.quit()
+            self.isClose=True
 
     def dict_to_json(self, data_dict):
         """

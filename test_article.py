@@ -8,6 +8,7 @@ try:
         "https://mp.weixin.qq.com/s/SJNb4YfqhlArFdCWhtKmXg"
     ]
     for url in urls:
+        Web.Close()
         article_data = Web.get_article_content("https://mp.weixin.qq.com/s/SJNb4YfqhlArFdCWhtKmXg")
         print(article_data)
     Web.Close()

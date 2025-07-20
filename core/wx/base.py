@@ -27,7 +27,7 @@ class WxGather:
     def Model(self):
         if cfg.get("gather.model","web")=="app":
             from core.wx import MpsAppMsg
-            wx=MpsWeb()
+            wx=MpsAppMsg()
         if cfg.get("gather.model","web")=="web":
             from core.wx import MpsWeb
             wx=MpsWeb()

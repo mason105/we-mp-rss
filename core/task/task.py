@@ -4,6 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from typing import Callable, Any, Optional
 from core.log import logger
+import uuid
 # 设置日志
 
 class TaskScheduler:
@@ -102,6 +103,9 @@ class TaskScheduler:
                 month = parse_random_field(month, 'month')
                 day_of_week = parse_random_field(day_of_week, 'day_of_week')
                 
+                # 生成job_id
+                job_id = job_id or str(uuid.uuid4())
+
                 trigger = CronTrigger(
                     second=second,
                     minute=minute,
