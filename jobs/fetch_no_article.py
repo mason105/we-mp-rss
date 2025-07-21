@@ -16,7 +16,7 @@ def fetch_articles_without_content():
         articles = session.query(Article).filter(Article.content == None).limit(10).all()
         
         if not articles:
-            print("没有找到content为空的文章")
+            print_warning("暂无需要获取内容的文章")
             return
         
         for article in articles:

@@ -14,12 +14,8 @@ class MpsApi(WxGather):
     # 重写 content_extract 方法
     def content_extract(self,  url):
         try:
-            session=self.session
-            r = session.get(url, headers=self.headers)
-            if r.status_code == 200:
-                text = r.text
-                if text is None:
-                    return
+            text = super().content_extract(url)
+            if text is not None:
                 if "当前环境异常，完成验证后即可继续访问" in text:
                     print_error("当前环境异常，完成验证后即可继续访问")
                 soup = BeautifulSoup(text, 'html.parser')

@@ -8,6 +8,30 @@ from .cfg import cfg,wx_cfg
 from core.print import print_error,print_info
 from core.rss import RSS
 from driver.success import WX_LOGIN_ED,WX_LOGIN_INFO
+import random
+# 定义一些常见的 User-Agent
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Android 11; Mobile; rv:89.0) Gecko/89.0 Firefox/89.0",
+    # Chrome 桌面端
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+    # Firefox 桌面端
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13.4; rv:109.0) Gecko/20100101 Firefox/114.0",
+    # Safari 桌面端
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+    # Edge 桌面端
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.67",
+    # Android 移动端 Chrome
+    "Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36",
+    # Android 移动端 Firefox
+    "Mozilla/5.0 (Android 13; Mobile; rv:109.0) Gecko/109.0 Firefox/114.0",
+    # iOS 移动端 Safari
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
+]
 # 定义基类
 class WxGather:
     articles=[]
@@ -26,10 +50,11 @@ class WxGather:
         return False
     def Model(self):
         type=cfg.get("gather.model","web")
+        
         if type=="app":
             from core.wx import MpsAppMsg
             wx=MpsAppMsg()
-        if type=="web":
+        elif type=="web":
             from core.wx import MpsWeb
             wx=MpsWeb()
         else:
@@ -56,6 +81,27 @@ class WxGather:
             "Cookie":self.cookies,
             "User-Agent": self.user_agent 
         }
+    def content_extract(self,  url):
+        text=""
+        try:
+            session=self.session
+            # 随机选择一个 User-Agent
+            user_agent = random.choice(USER_AGENTS)
+            # 更新请求头
+            headers = self.headers.copy()
+            headers.update({
+                "User-Agent": user_agent,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive"
+            })
+            r = session.get(url, headers=headers)
+            if r.status_code == 200:
+                text = r.text
+        except:
+            pass
+        return text
     def FillBack(self,CallBack=None,data=None,Ext_Data=None):
         if CallBack is not None:
             if data is not  None:

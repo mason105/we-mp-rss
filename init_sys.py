@@ -13,7 +13,7 @@ def init_user(_db: Db):
     try:
       username,password=os.getenv("USERNAME", "admin"),os.getenv("PASSWORD", "admin@123")
       session=_db.get_session()
-      session.merge(User(
+      session.add(User(
           id=0,
           username=username,
           password_hash=pwd_context.hash(password),
