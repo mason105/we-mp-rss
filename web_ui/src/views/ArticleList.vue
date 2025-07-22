@@ -332,7 +332,7 @@ const wechatAuthQrcodeRef = ref()
   }
 
 const openRssFeed = () => {
-  const format = ['rss', 'atom', 'json'].includes(rssFormat.value) 
+  const format = ['rss', 'atom', 'json','md','txt'].includes(rssFormat.value) 
     ? rssFormat.value 
     : 'atom'
   let search=""
