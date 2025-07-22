@@ -61,6 +61,8 @@
                 <a-doption @click="rssFormat='atom'; openRssFeed()">ATOM</a-doption>
                 <a-doption @click="rssFormat='rss'; openRssFeed()">RSS</a-doption>
                 <a-doption @click="rssFormat='json'; openRssFeed()">JSON</a-doption>
+                <a-doption @click="rssFormat='md'; openRssFeed()">Markdown</a-doption>
+                <a-doption @click="rssFormat='txt'; openRssFeed()">Text</a-doption>
               </template>
             </a-dropdown>
             <!-- <a-button @click="importArticles" tooltip="导入JSON格式文章数据">

@@ -145,6 +145,8 @@ class Wx:
             self.Call_Success()
         except Exception as e:
             print_error(f"未登录{str(e)}")
+        finally:
+            self.Close()
     def isLock(self):             
         if self.isLock:
             if os.path.exists(self.wx_login_url):

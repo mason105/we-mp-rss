@@ -9,6 +9,7 @@ from datetime import datetime
 from core.log import logger
 from core.config import cfg
 from bs4 import BeautifulSoup
+from core.content_format import format_content
 import re
 @dataclass
 class MessageWebHook:
@@ -101,27 +102,9 @@ def call_webhook(hook: MessageWebHook) -> str:
     for article in hook.articles:
         if isinstance(article, dict) and "content" in article and article["content"]:
             processed_article = article.copy()
-            
             # 只有template需要content时才进行格式转换
             if template_needs_content:
-                if content_format == 'text':
-                    # 去除HTML标签，保留纯文本
-                    soup = BeautifulSoup(processed_article['content'], 'html.parser')
-                    text = soup.get_text().strip()
-                    processed_article['content'] = re.sub(r'\n\s*\n', '\n\n', text)
-                    
-                elif content_format == 'markdown':
-                    from markdownify import markdownify
-                    # 转换HTML到Markdown
-                    processed_article['content'] = markdownify(
-                        processed_article['content'],
-                        heading_style="ATX",
-                        bullets='-*+',
-                        code_language='python'
-                    )
-                    # 替换多个连续换行符为单个换行符
-                    processed_article['content'] = re.sub(r'\n\s*\n', '\n\n', processed_article['content'])
-                    
+              processed_article["content"] = format_content(processed_article["content"], content_format)
             processed_articles.append(processed_article)
         else:
             processed_articles.append(article)

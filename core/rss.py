@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 import os
 import json
+from core.content_format import format_content
 class RSS:
     cache_dir = os.path.normpath("data/cache/rss")
     content_cache_dir = os.path.normpath("data/cache/content")
@@ -19,7 +20,7 @@ class RSS:
         self.rss_file = normalized_path
         pass
     def get_type(self):
-        if self.ext=="rss" or self.ext=="atom":
+        if self.ext in ["rss","atom","md","txt"]:
             return "application/xml"
         if self.ext=="json":
             return "application/json"
@@ -157,35 +158,36 @@ class RSS:
         ET.SubElement(feed, "title").text = title
         ET.SubElement(feed, "link",rel="alternate", href=link)
         ET.SubElement(feed, "link",rel="icon", href=image_url)
-        ET.SubElement(feed, "logo").text=image_url
-        ET.SubElement(feed, "icon").text=image_url
+        ET.SubElement(feed, "logo").text=str(image_url)
+        ET.SubElement(feed, "icon").text=str(image_url)
         ET.SubElement(feed, "updated").text = datetime.now().strftime("%a, %d %b %Y %H:%M:%S %z")
-        ET.SubElement(feed, "id").text = link
+        ET.SubElement(feed, "id").text = str(link)
         ET.SubElement(feed, "author").text = "Mp-We-Rss"
         # 设置image子项
         if cfg.get("rss.add_cover",False)==True and image_url != "":
             image = ET.SubElement(feed, "image")
-            ET.SubElement(image, "url").text = image_url
-            ET.SubElement(image, "title").text = title
-            ET.SubElement(image, "link").text = link
+            ET.SubElement(image, "url").text = str(image_url)
+            ET.SubElement(image, "title").text = str(title)
+            ET.SubElement(image, "link").text = str(link)
         for rss_item in rss_list:
             entry = ET.SubElement(feed, "entry")
             ET.SubElement(entry, "id").text = rss_item["id"]
-            ET.SubElement(entry, "title").text = rss_item["title"]
-            ET.SubElement(entry, "link", href=rss_item["link"])
+            ET.SubElement(entry, "title").text = str(rss_item["title"])
+            ET.SubElement(entry, "link", href=str(rss_item["link"]))
             ET.SubElement(entry, "updated").text =self.datetime_to_rfc822(str(rss_item["updated"]))
-            ET.SubElement(entry, "summary").text = rss_item["description"]
-            ET.SubElement(entry, "author").text = rss_item["mp_name"]
+            ET.SubElement(entry, "summary").text = str(rss_item["description"])
+            ET.SubElement(entry, "author").text = str(rss_item["mp_name"])
              # 添加图片封面
             if cfg.get("rss.add_cover",False)==True:
                 enclosure = ET.SubElement(entry, "enclosure")
-                enclosure.set("url", rss_item["image"])
+                enclosure.set("url", str(rss_item["image"]))
                 enclosure.set("length", "0")
                 enclosure.set("type", "image/jpeg")
             
             if full_context:
+                type=self.get_content_type()
                 content = ET.SubElement(entry, "content", type="html")
-                content.text = str(rss_item["content"])
+                content.text = format_content(rss_item["content"],type)
         
         # 生成XML字符串
         tree_str = '<?xml version="1.0" encoding="utf-8"?>\r\n' + \
@@ -195,7 +197,15 @@ class RSS:
             with open(self.rss_file, "w", encoding="utf-8") as f:
                 f.write(tree_str)
         return tree_str
-
+    def get_content_type(self):
+        ext=self.ext
+        if ext in("atom","xml","json","markdown"):
+            return "html",
+        elif ext in("md"):
+            return "markdown"
+        elif ext in("txt"):
+            return "text"
+        return "html"
     def generate_json(self, rss_list: dict,title: str = "Mp-We-Rss", 
                     link: str = "https://github.com/rachelos/we-mp-rss",
                     description: str = "RSS频道", language: str = "zh-CN",image_url:str="") -> str:
@@ -238,7 +248,7 @@ class RSS:
             return None     
     def generate(self,rss_list: dict,ext=str, title: str = "Mp-We-Rss", 
                     link: str = "https://github.com/rachelos/we-mp-rss",
-                    description: str = "RSS频道", language: str = "zh-CN",image_url:str="") -> str:
+                    description: str = "RSS频道", language: str = "zh-CN",image_url:str="",template:str=None) -> str:
         """根据扩展名获取对应格式的RSS内容
         
         Args:
@@ -253,15 +263,22 @@ class RSS:
             ValueError: 当扩展名不支持时
         """
         ext = ext.lower().strip('.')
+        self.ext=ext
         if ext in ('rss', 'xml'):
             return self.generate_rss(rss_list, title=title, link=link, description=description,language=language,image_url=image_url)
-        elif ext == 'atom':
+        elif ext in ('atom','md','txt'):
             return self.generate_atom(rss_list, title=title, link=link, description=description,language=language,image_url=image_url)
         elif ext == 'json':
             return self.generate_json(rss_list, title=title, link=link, description=description,language=language,image_url=image_url)
+        elif template is not None:
+            return self.generate_by_template(rss_list,template, title=title, link=link, description=description,language=language,image_url=image_url)
         else:
             raise ValueError(f"Unsupported extension: {ext}")
-
+    def generate_by_template(self,rss_list: dict, template: str, title: str = "Mp-We-Rss",link: str = "https://github.com/rachelos/we-mp-rss",description: str = "RSS频道",language: str = "zh-CN",image_url:str=""):
+            from core.lax import TemplateParser
+            template = TemplateParser(template)
+            return template.render({"articles": rss_list, "title": title,"link":link,"description":description,"language":language,"image_url":image_url})
+            pass
     def clear_cache(self,mp_id:str=""):
 
         """清除所有缓存文件

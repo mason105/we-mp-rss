@@ -6,5 +6,5 @@ def auth():
     WX_API.Token(CallBack=Success)
 if os.getenv('WE_RSS.AUTH',False):
     auth_task=TaskScheduler()
-    auth_task.add_cron_job(auth, "* */3~10 * * *")
+    auth_task.add_cron_job(auth, "0 */3~10 * * *")
     auth_task.start()

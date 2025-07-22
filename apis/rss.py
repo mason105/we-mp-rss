@@ -8,6 +8,7 @@ from .base import success_response, error_response
 from core.auth import get_current_user
 from core.config import cfg
 from apis.base import format_search_kw
+from core.print import print_error,print_success
 def verify_rss_access(current_user: dict = Depends(get_current_user)):
     """
     RSS访问认证方法
@@ -175,6 +176,7 @@ async def get_mp_articles_source(
     offset: int = Query(0, ge=0),
     kw:str="",
     is_update:bool=True,
+    template:str=None
     # current_user: dict = Depends(get_current_user)
 ):
     rss=RSS(name=f'{feed_id}_{limit}_{offset}',ext=ext)
@@ -220,12 +222,12 @@ async def get_mp_articles_source(
         import datetime
         rss_list = [{
             "id": str(article.id),
-            "title": article.title,
+            "title": article.title or "",
             "link":  f"{rss_domain}rss/feed/{article.id}" if cfg.get("rss.local",False) else article.url,
-            "description": article.description if article.description != "" else article.title,
-            "content": article.content,
-            "image": article.pic_url,
-            "mp_name":_feed.mp_name,
+            "description": article.description if article.description != "" else article.title or "",
+            "content": article.content or "",
+            "image": article.pic_url or "",
+            "mp_name":_feed.mp_name or "",
             "updated": datetime.datetime.fromtimestamp(article.publish_time)
         } for _feed,article in articles]
         
@@ -244,15 +246,14 @@ async def get_mp_articles_source(
             rss.cache_content(article.id, content_data)
         
         # 生成RSS XML
-        rss_xml = rss.generate(rss_list,ext=ext, title=f"{feed.mp_name}",link=rss_domain,description=feed.mp_intro,image_url=feed.mp_cover)
+        rss_xml = rss.generate(rss_list,ext=ext, title=f"{feed.mp_name}",link=rss_domain,description=feed.mp_intro,image_url=feed.mp_cover,template=template)
         
         return Response(
             content=rss_xml,
             media_type=rss.get_type()
         )
     except Exception as e:
-        print(f"获取RSS错误:")
-        print(e)
+        print_error(f"获取RSS错误:{e}")
         # raise e
         return Response(
              content=rss_xml,
