@@ -244,7 +244,6 @@ async def get_mp_articles_source(
                 "mp_name": _feed.mp_name
             }
             rss.cache_content(article.id, content_data)
-        
         # 生成RSS XML
         rss_xml = rss.generate(rss_list,ext=ext, title=f"{feed.mp_name}",link=rss_domain,description=feed.mp_intro,image_url=feed.mp_cover,template=template)
         
