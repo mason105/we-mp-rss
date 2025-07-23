@@ -193,15 +193,15 @@ async def get_mp_articles_source(
         # 查询公众号信息
         feed = session.query(Feed)
         query=session.query(Feed, Article).join(Article, Feed.id == Article.mp_id)
-        rss_domain=cfg.get("rss.base_url",request.base_url)
+        rss_domain=cfg.get("rss.base_url",str(request.base_url))
         if feed_id!="all":
             feed=feed.filter(Feed.id == feed_id).first()
             query=query.filter(Article.mp_id == feed_id)
         else:
             feed=Feed()
-            feed.mp_name=cfg.get("rss.title","WeRss")
-            feed.mp_intro=cfg.get("rss.description","WeRss高效订阅我的公众号")
-            feed.mp_cover=cfg.get("rss.cover",f"{rss_domain}static/logo.svg")    
+            feed.mp_name=cfg.get("rss.title","WeRss") or "WeRss"
+            feed.mp_intro=cfg.get("rss.description") or "WeRss高效订阅我的公众号"
+            feed.mp_cover=cfg.get("rss.cover") or f"{rss_domain}static/logo.svg"
         
         if not feed:
             raise HTTPException(
@@ -253,7 +253,7 @@ async def get_mp_articles_source(
         )
     except Exception as e:
         print_error(f"获取RSS错误:{e}")
-        # raise e
+        # raise
         return Response(
              content=rss_xml,
              media_type=rss.get_type()

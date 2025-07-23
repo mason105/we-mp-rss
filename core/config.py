@@ -158,9 +158,7 @@ class Config:
                 return val
         except (KeyError, TypeError):
             print_warning("Key {} not found in configuration".format(key))
-            if default is not None:
-                return default
-        return None
+        return default 
 
 cfg=Config()
 def set_config(key:str,value:str):
