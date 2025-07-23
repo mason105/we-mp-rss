@@ -94,7 +94,7 @@ class WXArticleFetcher:
             body=driver.find_element(By.TAG_NAME,"body").text
             info["content"]=body
             if "该内容已被发布者删除" in body or "The content has been deleted by the author." in body:
-                info["content"]="该内容已被发布者删除"
+                info["content"]="DELETED"
                 raise Exception("该内容已被发布者删除")
             # 等待关键元素加载
             wait.until(
@@ -138,7 +138,7 @@ class WXArticleFetcher:
             # raise Exception(f"文章内容获取失败: {str(e)}")
             print(f"文章内容获取失败: {str(e)}")
             print_warning(f"\n\n{body}")
-            raise
+            # raise
 
         try:
             # 等待关键元素加载
