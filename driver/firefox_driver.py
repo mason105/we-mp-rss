@@ -291,7 +291,10 @@ class FirefoxController:
         try:
             self._install_firefox()
             self._setup_driver()
-            
+            self.options.page_load_strategy = "eager"
+            if headless:
+                self.options.add_argument("--headless") 
+                pass  
             if headless and  self.system != "windows":
                 self.options.add_argument("--headless")          # 启用无界面模式
                 self.options.add_argument("--disable-gpu")       # 禁用 GPU 加速

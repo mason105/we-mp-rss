@@ -255,6 +255,10 @@ services:
     volumes:
       - ./data:/app/data
 ```
+# Compose Files
+[Mysql版本](blob/main/docker-compose.yaml)
+[Sqlite版本](blob/main/docker-compose-sqlite.yaml)
+
 # Docker构建及运行
 ```
 # 构建

@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from typing import Dict
+from core.print import print_error,print_info,print_success,print_warning
 import time
 import re
 
@@ -82,27 +83,32 @@ class WXArticleFetcher:
             }
         self.controller.start_browser()    
         self.driver = self.controller.driver
+        print_warning(f"Get:{url} Wait:{self.wait_timeout}")
         self.controller.open_url(url)
         driver=self.driver
         wait = WebDriverWait(driver, self.wait_timeout)
         try:
            
             driver.get(url)
-            
+              # 等待页面加载
             body=driver.find_element(By.TAG_NAME,"body").text
             info["content"]=body
-            if "该内容已被发布者删除" in body:
+            if "该内容已被发布者删除" in body or "The content has been deleted by the author." in body:
                 info["content"]="该内容已被发布者删除"
                 raise Exception("该内容已被发布者删除")
             # 等待关键元素加载
             wait.until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "#activity-detail"))
             )
+            print(body)
+             # 等待页面加载完成，并查找 meta[property="og:title"]
+            og_title = wait.until(EC.presence_of_element_located((By.XPATH, '//meta[@property="og:title"]')))
             
+            # 获取属性值
+            print(og_title.get_attribute("content"))
             # 获取文章元数据
-            title = driver.find_element(
-                By.CSS_SELECTOR, "#activity-name"
-            ).text.strip()
+            title = og_title.get_attribute("content")
+
             author = driver.find_element(
                 By.CSS_SELECTOR, "#meta_content .rich_media_meta_text"
             ).text.strip()
@@ -131,6 +137,8 @@ class WXArticleFetcher:
         except Exception as e:
             # raise Exception(f"文章内容获取失败: {str(e)}")
             print(f"文章内容获取失败: {str(e)}")
+            print_warning(f"\n\n{body}")
+            raise
 
         try:
             # 等待关键元素加载

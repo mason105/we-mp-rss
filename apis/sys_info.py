@@ -46,7 +46,7 @@ async def get_system_info(
         - system: 系统详细信息
     """
     try:
-        from core.article_lax import ARTICLE_INFO
+        from core.article_lax import ARTICLE_INFO,laxArticle
         from .ver import API_VERSION
         from core.ver import VERSION as CORE_VERSION,LATEST_VERSION
 
@@ -74,7 +74,7 @@ async def get_system_info(
                 "info":WX_LOGIN_INFO,
                 "login":WX_LOGIN_ED,
             },
-            "article":ARTICLE_INFO,
+            "article":laxArticle(),
             'queue':TaskQueue.get_queue_info(),
         }
         return success_response(data=system_info)

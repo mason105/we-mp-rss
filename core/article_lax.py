@@ -1,4 +1,4 @@
-from core.models import Article,DATA_STATUS
+from core.models import Article,Feed,DATA_STATUS
 from core.db import DB
 import json
 class ArticleInfo():
@@ -10,7 +10,8 @@ class ArticleInfo():
     all_count:int=0
     #不正常的文章数量
     wrong_count:int=0
-    
+    #公众号总数
+    mp_all_count:int=0
 def laxArticle():
     info=ArticleInfo()
     session=DB.get_session()
@@ -23,6 +24,10 @@ def laxArticle():
 
     #获取删除的文章
     info.wrong_count=session.query(Article).filter(Article.status !=DATA_STATUS.ACTIVE ).count()
+
+    #公众号总数
+    info.mp_all_count=session.query(Feed).distinct(Feed.id).count()
+    session.close()
     return info.__dict__
     pass
 ARTICLE_INFO=laxArticle()
