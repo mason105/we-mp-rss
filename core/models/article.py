@@ -1,4 +1,4 @@
-from  .base import Base,Column,String,Integer,DateTime,Text
+from  .base import Base,Column,String,Integer,DateTime,Text,DATA_STATUS
 class Article(Base):
     __tablename__ = 'articles'
     id = Column(String(255), primary_key=True)

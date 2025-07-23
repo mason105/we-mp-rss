@@ -1,4 +1,4 @@
-from core.models.article import Article
+from core.models.article import Article,DATA_STATUS
 from core.db import DB
 from core.wx.base import WxGather
 from time import sleep
@@ -37,6 +37,9 @@ def fetch_articles_without_content():
             if content:
                 # 更新内容
                 article.content = content
+                if "该内容已被发布者删除" in content:
+                    print_error(f"获取文章 {article.title} 内容已被发布者删除")
+                    article.status = DATA_STATUS.DELETED
                 session.commit()
                 print_success(f"成功更新文章 {article.title} 的内容")
             else:
