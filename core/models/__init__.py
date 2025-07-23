@@ -8,3 +8,5 @@ from .user import User
 from .message_task import MessageTask
 # 导入配置管理模型
 from .config_management import ConfigManagement
+# 导入基础模型
+from .base import *

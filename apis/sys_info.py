@@ -23,7 +23,7 @@ async def get_base_info() -> Dict[str, Any]:
             'core_version': CORE_VERSION,
             "ui":{
                 "name": cfg.get("server.name",""),
-                "web_name": cfg.get("server.web_name",""),
+                "web_name": cfg.get("server.web_name","WeRss公众号订阅平台"),
             }
         }
         return success_response(data=base_info)
@@ -46,8 +46,10 @@ async def get_system_info(
         - system: 系统详细信息
     """
     try:
+        from core.article_lax import ARTICLE_INFO
         from .ver import API_VERSION
         from core.ver import VERSION as CORE_VERSION,LATEST_VERSION
+
         # 获取系统信息
         system_info = {
             'os': {
@@ -72,7 +74,7 @@ async def get_system_info(
                 "info":WX_LOGIN_INFO,
                 "login":WX_LOGIN_ED,
             },
-
+            "article":ARTICLE_INFO,
             'queue':TaskQueue.get_queue_info(),
         }
         return success_response(data=system_info)
