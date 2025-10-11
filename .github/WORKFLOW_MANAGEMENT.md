@@ -6,44 +6,78 @@
 - `test-docker-build.yaml` - Docker 镜像构建和测试
 - `deploy.yaml` - 部署到服务器
 
-其他 workflow 文件已被删除，因为它们不适用于我们的部署环境。
+**我们使用 Git Sparse-Checkout 技术自动过滤其他 workflow 文件。**
 
-## 从上游同步代码
+## Sparse-Checkout 配置
 
-### 方法 1：使用自动清理脚本（推荐）
+### 什么是 Sparse-Checkout？
 
-运行同步脚本会自动合并上游代码并清理不需要的 workflow：
+Sparse-Checkout 是 Git 的原生功能，允许你只检出仓库的一部分文件到工作目录中。类似 `.gitignore`，但作用于已追踪的文件。
 
-```bash
-./.github/sync-upstream.sh
+### 当前配置
+
+配置位置：`.git/info/sparse-checkout`
+
+```
+/*
+.github/*
+\!.github/workflows/*
+/.github/workflows/deploy.yaml
+/.github/workflows/test-docker-build.yaml
 ```
 
-### 方法 2：手动同步
+这个配置的含义：
+- `/*` - 包含所有根目录文件和目录
+- `.github/*` - 包含 .github 目录下的所有内容
+- `\!.github/workflows/*` - **排除** workflows 目录下的所有文件
+- `/.github/workflows/deploy.yaml` - 但**保留** deploy.yaml
+- `/.github/workflows/test-docker-build.yaml` - 但**保留** test-docker-build.yaml
 
-如果你更喜欢手动控制：
+### 从上游同步代码
+
+**完全自动化，无需任何手动操作：**
 
 ```bash
-# 1. 获取上游更新
+# 获取上游更新
 git fetch upstream
 
-# 2. 合并上游代码（.gitattributes 会自动使用我们的 workflow 版本）
+# 合并上游代码
 git merge upstream/main
 
-# 3. 如果有新的不需要的 workflow 文件被引入，手动删除它们
-cd .github/workflows
-ls -la  # 检查是否有新文件
-rm unwanted-workflow.yaml  # 删除不需要的文件
+# 就这样！上游的其他 workflow 文件会自动被忽略，不会出现在你的工作目录中
+```
 
-# 4. 提交更改（如果有）
-git add .
-git commit -m "chore: cleanup workflows after upstream sync"
+### 查看当前配置
+
+```bash
+# 查看 sparse-checkout 规则
+git sparse-checkout list
+
+# 验证配置是否启用
+git config core.sparseCheckout  # 应该返回 true
+```
+
+### 添加新的 workflow 文件
+
+如果将来需要添加其他 workflow：
+
+```bash
+git sparse-checkout add /.github/workflows/new-workflow.yaml
+```
+
+### 完全禁用 Sparse-Checkout
+
+如果需要看到所有文件：
+
+```bash
+git sparse-checkout disable
 ```
 
 ## .gitattributes 策略
 
-我们设置了 `.gitattributes` 使用 `merge=ours` 策略：
+我们同时设置了 `.gitattributes` 使用 `merge=ours` 策略作为额外保护：
 - 当合并上游代码时，workflows 目录会优先使用我们的版本
-- 这可以减少合并冲突，但也意味着需要手动检查上游对保留的 workflow 的更新
+- 这是双重保护机制
 
 ## 注意事项
 
