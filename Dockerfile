@@ -7,15 +7,14 @@ WORKDIR /app
 ENV PIP_INDEX_URL=https://mirrors.huaweicloud.com/repository/pypi/simple
 
 # 复制Python依赖文件
-# 复制后端代码
+# 复制后端代码（.dockerignore 会自动排除 web_ui、db.db 等）
 COPY . .
 # COPY requirements.txt .
 # RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-RUN rm -rf ./web_ui
-RUN rm -rf db.db
+# 复制配置文件示例作为默认配置
 COPY ./config.example.yaml  ./config.yaml
-RUN chmod +x ./start.sh
+
 # 暴露端口
 EXPOSE 8001
 # 启动命令

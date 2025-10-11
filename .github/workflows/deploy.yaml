@@ -1,0 +1,105 @@
+name: Deploy to Server
+on:
+  workflow_dispatch:
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+          fetch-depth: 0
+
+    - name: Get the tag
+      id: tag
+      run: |
+        if [ ${GITHUB_REF#refs/*/} == RC* ]; then export LATEST_TAG=${GITHUB_REF#refs/*/}; else export LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`); fi
+        echo "TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+    - name: Get short SHA
+      id: sha
+      run: echo "sha7=$( echo $( git show-ref ${{ steps.tag.outputs.TAG }}  | cut -c1-7 ) )" >> $GITHUB_OUTPUT
+
+    - name: Deploy
+      uses: nanjingrd/ssh-deploy-action@master
+      id: main
+      env:
+        SYNCED_RUN_ID: ${{github.run_id}}
+        ID_RSA_P: ${{ secrets.VAR_ID_RSA_P }}
+        TARGET_KEY: ${{ secrets.VAR_ID_RSA_P }}
+        TARGET_HOST: "10.10.10.95"
+        TARGET_PORT: "22"
+        TARGET_USER: "daqian"
+        JUMP_USER: "daqian"
+        JUMP_HOST: "aliyun.cprd.tech"
+        JUMP_KEY: ${{ secrets.VAR_ID_RSA_P }}
+        CI_PROJECT_NAME: "we-mp-rss"
+        DOCKER_CONTAINER_NAME: "we-mp-rss_CD"
+        DOCKER_IMG_NAME: "we-mp-rss"
+        DOCKER_IMG_TAG: ${{ steps.sha.outputs.sha7 }}
+        CI_COMMIT_REF_NAME: ${{ steps.tag.outputs.TAG }}
+        CI_REGISTRY_URL: ${{ secrets.VAR_REGISTRY_URL }}
+        REGISTRY_username: ${{ secrets.VAR_REGISTRY_USERNAME }}
+        REGISTRY_password: ${{ secrets.VAR_REGISTRY_PASSWORD }}
+
+        COMMAND: |
+          #/bin/bash
+          set -ex
+          date
+          echo "CI_PROJECT_NAME=""${CI_PROJECT_NAME}"
+          echo "CI_COMMIT_REF_NAME=""${CI_COMMIT_REF_NAME}"
+
+          mkdir -p /tmp/${CI_PROJECT_NAME}
+          cd /tmp/${CI_PROJECT_NAME}
+
+          # Create necessary directories if they don't exist
+          mkdir -p /opt/${CI_PROJECT_NAME}/config
+          mkdir -p /opt/${CI_PROJECT_NAME}/data
+          mkdir -p /opt/${CI_PROJECT_NAME}/data/cache
+          mkdir -p /opt/${CI_PROJECT_NAME}/data/pdf
+          mkdir -p /opt/${CI_PROJECT_NAME}/data/markdown
+
+          docker login --username=${REGISTRY_username} ${CI_REGISTRY_URL} -p${REGISTRY_password}
+          docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
+          docker rm $( docker stop $( docker update --restart=no  $( docker ps -a -q --filter name=${DOCKER_CONTAINER_NAME}* --format='{{.ID}}'))) || true
+
+          docker run  -itd  --name=${DOCKER_CONTAINER_NAME}_${CI_COMMIT_REF_NAME} --restart=always --add-host=host.docker.internal:host-gateway -e TZ=Asia/Shanghai -p 8001:8001 -v /opt/${CI_PROJECT_NAME}/config/config.yaml:/app/config.yaml -v /opt/${CI_PROJECT_NAME}/data:/app/data  ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
+
+          docker image prune -a -f --filter='label=image_autoclean=true'
+
+        POSTCOMMAND: |
+          #/bin/bash
+          echo "Deployment completed"
+          rm -rf /tmp/${CI_PROJECT_NAME}
+
+    - name: Get wechat_id from github_id
+      id: wechat_id
+      uses: nanjingrd/gitid-2-wechatid-action@master
+      with:
+        github_id: ${{ github.actor }}
+
+    - name: Print wechat id
+      run: echo "The id is ${{ steps.wechat_id.outputs.wechat_id }}"
+
+    - name: Generate msg body
+      id: sync_msg_text
+      if: always()
+      run: echo "text=$( if [[ ${{ steps.main.outputs.return_code  }} -ne 0 ]]; then echo "Deploy FAILED, please contact admin"; else echo "Deploy succeed" ; fi )" >> $GITHUB_OUTPUT
+
+    - name: Send message to wechat notify
+      uses: mason105/send_message_to_wechat_work_app@master
+      if: always()
+      with:
+        wechat_id: ${{ secrets.VAR_TENCENT_APP_ID }}
+        agent_id:  ${{ secrets.VAR_TENCENT_NOTIFY_KEY }}
+        agent_secret: ${{ secrets.VAR_TENCENT_NOTIFY_SECURITY }}
+        to_user: ${{ steps.wechat_id.outputs.wechat_id }}
+        msgtype: text
+        send_step: post
+        content:  |
+            ${{ github.event.repository.name }}
+            ${{ steps.sync_msg_text.outputs.text  }} (${{ steps.main.outputs.return_code  }})
+            ---log start---
+            ${{ steps.main.outputs.run_log }}
+            ---log end ---
