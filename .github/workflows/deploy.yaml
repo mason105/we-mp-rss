@@ -15,11 +15,11 @@ jobs:
       id: tag
       run: |
         if [ ${GITHUB_REF#refs/*/} == RC* ]; then export LATEST_TAG=${GITHUB_REF#refs/*/}; else export LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`); fi
-        echo ::set-output name=TAG::$LATEST_TAG
+        echo "TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
 
     - name: Get short SHA
       id: sha
-      run: echo "::set-output name=sha7::$( echo $( git show-ref ${{ steps.tag.outputs.TAG }}  | cut -c1-7 ) )"
+      run: echo "sha7=$( echo $( git show-ref ${{ steps.tag.outputs.TAG }}  | cut -c1-7 ) )" >> $GITHUB_OUTPUT
 
     - name: Deploy
       uses: nanjingrd/ssh-deploy-action@master
@@ -85,7 +85,7 @@ jobs:
     - name: Generate msg body
       id: sync_msg_text
       if: always()
-      run: echo "::set-output name=text::$( if [[ ${{ steps.main.outputs.return_code  }} -ne 0 ]]; then echo "Deploy FAILED, please contact admin"; else echo "Deploy succeed" ; fi )"
+      run: echo "text=$( if [[ ${{ steps.main.outputs.return_code  }} -ne 0 ]]; then echo "Deploy FAILED, please contact admin"; else echo "Deploy succeed" ; fi )" >> $GITHUB_OUTPUT
 
     - name: Send message to wechat notify
       uses: mason105/send_message_to_wechat_work_app@master
