@@ -1,0 +1,4 @@
+# Workflow management strategy for fork repository
+# We only keep test-docker-build.yaml and deploy.yaml
+# When merging from upstream, prefer our version for workflows directory
+.github/workflows/** merge=ours
