@@ -1,15 +1,21 @@
-name: Test Docker Build
+name: Build and Push Docker Image
 
-# Trigger on push to test-docker-build branch or manual dispatch
+# Workflow triggers:
+# 1. Push to test-docker-build branch (for testing)
+# 2. Tag pushes (v* or RC.* patterns)
+# 3. Manual trigger via workflow_dispatch
 on:
   push:
     branches:
       - test-docker-build
+    tags:
+      - 'v*'
+      - 'RC.*'
   workflow_dispatch:
 
 jobs:
-  test-build:
-    name: Test Docker Image Build
+  build-and-push:
+    name: Build and Push we-mp-rss Image
     runs-on: ubuntu-latest
 
     steps:
@@ -19,31 +25,78 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image (no push)
+      - name: Generate short SHA
+        id: short-sha
+        run: echo "sha7=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      # Login to custom Docker Registry
+      # Required secrets:
+      # - VAR_REGISTRY_URL: Docker registry URL (e.g., registry.example.com)
+      # - VAR_REGISTRY_USERNAME: Registry username
+      # - VAR_REGISTRY_PASSWORD: Registry password or access token
+      - name: Login to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.VAR_REGISTRY_URL }}
+          username: ${{ secrets.VAR_REGISTRY_USERNAME }}
+          password: ${{ secrets.VAR_REGISTRY_PASSWORD }}
+
+      # Build and push multi-architecture Docker image
+      # Supports: linux/amd64, linux/arm64
+      # Tags: latest and short commit SHA (7 characters)
+      # Uses GitHub Actions cache for faster subsequent builds
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          push: false
+          push: true
           tags: |
-            we-mp-rss:test
-            we-mp-rss:${{ github.sha }}
-          # Enable layer caching for faster builds
+            ${{ secrets.VAR_REGISTRY_URL }}/mason105/we-mp-rss:latest
+            ${{ secrets.VAR_REGISTRY_URL }}/mason105/we-mp-rss:${{ steps.short-sha.outputs.sha7 }}
+          platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Display build info
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: always()
+
+    steps:
+      - name: Generate build summary
         run: |
-          echo "======================================"
-          echo "Docker Build Successful!"
-          echo "======================================"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit SHA: ${{ github.sha }}"
-          echo "Build Time: $(date -u)"
-          echo "======================================"
-          echo "Image Tags:"
-          echo "  - we-mp-rss:test"
-          echo "  - we-mp-rss:${{ github.sha }}"
-          echo "======================================"
-          echo "Note: Image was built but NOT pushed to any registry"
-          echo "======================================"
+          echo "## 🚀 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| we-mp-rss | ${{ needs.build-and-push.result == 'success' && '✅ Success' || needs.build-and-push.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Built Images" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** \`${{ secrets.VAR_REGISTRY_URL }}/mason105\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`we-mp-rss:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`we-mp-rss:${GITHUB_SHA:0:7}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏗️ Build Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${GITHUB_SHA:0:7}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch/Tag:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.build-and-push.result }}" == "success" ]; then
+            echo "### 🎉 Deployment Ready" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Pull the image with:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ secrets.VAR_REGISTRY_URL }}/mason105/we-mp-rss:latest" >> $GITHUB_STEP_SUMMARY
+            echo "# or specific version" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ secrets.VAR_REGISTRY_URL }}/mason105/we-mp-rss:${GITHUB_SHA:0:7}" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ⚠️ Build Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the build logs above for error details." >> $GITHUB_STEP_SUMMARY
+          fi
