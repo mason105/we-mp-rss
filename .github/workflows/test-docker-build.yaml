@@ -1,0 +1,49 @@
+name: Test Docker Build
+
+# Trigger on push to test-docker-build branch or manual dispatch
+on:
+  push:
+    branches:
+      - test-docker-build
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    name: Test Docker Image Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: |
+            we-mp-rss:test
+            we-mp-rss:${{ github.sha }}
+          # Enable layer caching for faster builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Display build info
+        run: |
+          echo "======================================"
+          echo "Docker Build Successful!"
+          echo "======================================"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Build Time: $(date -u)"
+          echo "======================================"
+          echo "Image Tags:"
+          echo "  - we-mp-rss:test"
+          echo "  - we-mp-rss:${{ github.sha }}"
+          echo "======================================"
+          echo "Note: Image was built but NOT pushed to any registry"
+          echo "======================================"
