@@ -66,6 +66,12 @@ jobs:
           docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
           docker rm $( docker stop $( docker update --restart=no  $( docker ps -a -q --filter name=${DOCKER_CONTAINER_NAME}* --format='{{.ID}}'))) || true
 
+          # Create config file if it doesn't exist
+          if [ ! -f /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml ]; then
+            echo "Config file not found, creating default empty config..."
+            touch /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
+          fi
+
           docker run  -itd  --name=${DOCKER_CONTAINER_NAME}_${CI_COMMIT_REF_NAME} --restart=always --add-host=host.docker.internal:host-gateway -e TZ=Asia/Shanghai -p 8002:8001 -v /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml:/app/config.yaml -v /home/daqian/docker/${CI_PROJECT_NAME}/data:/app/data  ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
 
           docker image prune -a -f --filter='label=image_autoclean=true'
