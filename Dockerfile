@@ -14,7 +14,7 @@ COPY . .
 
 # 复制配置文件示例作为默认配置
 COPY ./config.example.yaml  ./config.yaml
-RUN chmod +x ./start.sh
+
 # 暴露端口
 EXPOSE 8001
 # 启动命令
