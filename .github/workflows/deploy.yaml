@@ -28,15 +28,15 @@ jobs:
         SYNCED_RUN_ID: ${{github.run_id}}
         ID_RSA_P: ${{ secrets.VAR_ID_RSA_P }}
         TARGET_KEY: ${{ secrets.VAR_ID_RSA_P }}
-        TARGET_HOST: ${{ secrets.TARGET_HOST }}
-        TARGET_PORT: ${{ secrets.TARGET_PORT }}
-        TARGET_USER: ${{ secrets.TARGET_USER }}
-        JUMP_USER: ${{ secrets.JUMP_USER }}
-        JUMP_HOST: ${{ secrets.JUMP_HOST }}
+        TARGET_HOST: "***REDACTED_IP***"
+        TARGET_PORT: "22"
+        TARGET_USER: "daqian"
+        JUMP_USER: "daqian"
+        JUMP_HOST: "***REDACTED_HOST***"
         JUMP_KEY: ${{ secrets.VAR_ID_RSA_P }}
-        CI_PROJECT_NAME: ${{ github.event.repository.name }}
-        DOCKER_CONTAINER_NAME: ${{ github.event.repository.name }}_CD
-        DOCKER_IMG_NAME: ${{ github.event.repository.name }}
+        CI_PROJECT_NAME: "we-mp-rss"
+        DOCKER_CONTAINER_NAME: "we-mp-rss_CD"
+        DOCKER_IMG_NAME: "we-mp-rss"
         DOCKER_IMG_TAG: ${{ steps.sha.outputs.sha7 }}
         CI_COMMIT_REF_NAME: ${{ steps.tag.outputs.TAG }}
         CI_REGISTRY_URL: ${{ secrets.VAR_REGISTRY_URL }}
