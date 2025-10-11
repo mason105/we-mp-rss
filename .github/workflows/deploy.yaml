@@ -1,6 +1,11 @@
 name: Deploy to Server
 on:
   workflow_dispatch:
+  # Support automatic triggering from build workflow
+  # Can also be triggered when RC tags are pushed
+  push:
+    tags:
+      - 'RC.*'
 
 jobs:
   Deploy:
