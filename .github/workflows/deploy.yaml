@@ -67,17 +67,16 @@ jobs:
           docker rm $( docker stop $( docker update --restart=no  $( docker ps -a -q --filter name=${DOCKER_CONTAINER_NAME}* --format='{{.ID}}'))) || true
 
           # Ensure config.yaml is a file, not a directory
-          CONFIG_PATH="/home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml"
-          if [ -d "$CONFIG_PATH" ]; then
+          if [ -d /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml ]; then
             echo "Config path is a directory, removing it..."
-            rm -rf "$CONFIG_PATH"
+            rm -rf /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
           fi
-          if [ -f "$CONFIG_PATH" ]; then
+          if [ -f /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml ]; then
             echo "Config file exists, removing to ensure clean state..."
-            rm -f "$CONFIG_PATH"
+            rm -f /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
           fi
           echo "Creating default empty config file..."
-          echo "" > "$CONFIG_PATH"
+          echo "" > /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
 
           docker run  -itd  --name=${DOCKER_CONTAINER_NAME}_${CI_COMMIT_REF_NAME} --restart=always --add-host=host.docker.internal:host-gateway -e TZ=Asia/Shanghai -p 8002:8001 -v /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml:/app/config.yaml -v /home/daqian/docker/${CI_PROJECT_NAME}/data:/app/data  ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
 
