@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist
+build
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Database
+db.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Web UI (excluded from backend build)
+web_ui/
+
+# Test files
+test_*.py
+*_test.py
+auto_test_refresh.py
+
+# Logs
+*.log
+logs/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+docs/
+
+# CI/CD
+.github/
+
+# Temporary files
+*.tmp
+*.bak
+refresh_results.json
