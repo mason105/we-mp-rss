@@ -1,0 +1,279 @@
+name: Deploy to Server
+
+# This workflow deploys the we-mp-rss application to a remote server via SSH.
+# It pulls the latest Docker image and runs it in a container.
+#
+# Required GitHub Secrets:
+# - VAR_REGISTRY_URL: Docker registry URL (e.g., registry.example.com)
+# - VAR_REGISTRY_USERNAME: Registry username
+# - VAR_REGISTRY_PASSWORD: Registry password or access token
+# - SERVER_HOST: Server IP address or hostname
+# - SERVER_PORT: SSH port (default: 22)
+# - SERVER_USER: SSH username
+# - SERVER_SSH_KEY: SSH private key for authentication
+#
+# Optional Secrets (for custom deployment paths):
+# - DEPLOY_CONFIG_PATH: Custom path for config file (default: /opt/we-mp-rss/config)
+# - DEPLOY_DATA_PATH: Custom path for data directory (default: /opt/we-mp-rss/data)
+# - DEPLOY_PORT: Custom host port mapping (default: 8001)
+
+on:
+  # Manual trigger via GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+        type: string
+      force_recreate:
+        description: 'Force recreate container even if running'
+        required: false
+        default: false
+        type: boolean
+
+  # Allow this workflow to be called by other workflows
+  workflow_call:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: false
+        default: 'latest'
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy we-mp-rss to Server
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine deployment tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.image_tag }}" ] && [ "${{ inputs.image_tag }}" != "latest" ]; then
+            echo "tag=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+            echo "Deploying specific tag: ${{ inputs.image_tag }}"
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "Deploying latest tag"
+          fi
+
+      # Deploy via SSH to the target server
+      # This step:
+      # 1. Logs into the Docker registry
+      # 2. Pulls the specified image
+      # 3. Stops and removes old container (if exists)
+      # 4. Runs new container with proper configuration
+      # 5. Cleans up unused images
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          REGISTRY_URL: ${{ secrets.VAR_REGISTRY_URL }}
+          REGISTRY_USERNAME: ${{ secrets.VAR_REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.VAR_REGISTRY_PASSWORD }}
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+          CONFIG_PATH: ${{ secrets.DEPLOY_CONFIG_PATH || '/opt/we-mp-rss/config' }}
+          DATA_PATH: ${{ secrets.DEPLOY_DATA_PATH || '/opt/we-mp-rss/data' }}
+          HOST_PORT: ${{ secrets.DEPLOY_PORT || '8001' }}
+          FORCE_RECREATE: ${{ inputs.force_recreate || 'false' }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: REGISTRY_URL,REGISTRY_USERNAME,REGISTRY_PASSWORD,IMAGE_TAG,CONFIG_PATH,DATA_PATH,HOST_PORT,FORCE_RECREATE
+          timeout: 5m
+          command_timeout: 10m
+          script: |
+            set -e
+            echo "=========================================="
+            echo "Starting deployment of we-mp-rss:${IMAGE_TAG}"
+            echo "=========================================="
+
+            # Login to Docker registry
+            echo "Step 1/6: Logging into Docker registry..."
+            echo "${REGISTRY_PASSWORD}" | docker login --username="${REGISTRY_USERNAME}" "${REGISTRY_URL}" --password-stdin
+            echo "✓ Login successful"
+
+            # Pull latest image
+            echo ""
+            echo "Step 2/6: Pulling Docker image..."
+            FULL_IMAGE="${REGISTRY_URL}/mason105/we-mp-rss:${IMAGE_TAG}"
+            docker pull "${FULL_IMAGE}"
+            echo "✓ Image pulled successfully"
+
+            # Create necessary directories if they don't exist
+            echo ""
+            echo "Step 3/6: Ensuring directories exist..."
+            mkdir -p "${CONFIG_PATH}"
+            mkdir -p "${DATA_PATH}"
+            mkdir -p "${DATA_PATH}/cache"
+            mkdir -p "${DATA_PATH}/pdf"
+            mkdir -p "${DATA_PATH}/markdown"
+            echo "✓ Directories ready"
+
+            # Check if container is running
+            echo ""
+            echo "Step 4/6: Checking for existing container..."
+            if docker ps -a --format '{{.Names}}' | grep -q '^we-mp-rss$'; then
+              echo "Found existing container 'we-mp-rss'"
+
+              # Stop and remove old container
+              echo "Stopping and removing old container..."
+              docker stop we-mp-rss || true
+              docker rm we-mp-rss || true
+              echo "✓ Old container removed"
+            else
+              echo "No existing container found"
+            fi
+
+            # Run new container
+            echo ""
+            echo "Step 5/6: Starting new container..."
+            docker run -d \
+              --name=we-mp-rss \
+              --restart=always \
+              -p "${HOST_PORT}:8001" \
+              -v "${CONFIG_PATH}/config.yaml:/app/config.yaml" \
+              -v "${DATA_PATH}:/app/data" \
+              -e TZ=Asia/Shanghai \
+              "${FULL_IMAGE}"
+
+            echo "✓ Container started successfully"
+
+            # Wait a few seconds for container to initialize
+            echo ""
+            echo "Waiting for container to initialize..."
+            sleep 5
+
+            # Verify container is running
+            if docker ps --format '{{.Names}}' | grep -q '^we-mp-rss$'; then
+              echo "✓ Container is running"
+            else
+              echo "✗ Container failed to start"
+              docker logs we-mp-rss --tail 50
+              exit 1
+            fi
+
+            # Clean up unused images
+            echo ""
+            echo "Step 6/6: Cleaning up unused images..."
+            docker image prune -f
+            echo "✓ Cleanup complete"
+
+            # Display container status
+            echo ""
+            echo "=========================================="
+            echo "Deployment completed successfully!"
+            echo "=========================================="
+            echo ""
+            echo "Container Status:"
+            docker ps --filter name=we-mp-rss --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo ""
+            echo "View logs with: docker logs -f we-mp-rss"
+
+      # Health check: Verify the service is responding
+      - name: Health check
+        uses: appleboy/ssh-action@v1.0.3
+        if: success()
+        env:
+          HOST_PORT: ${{ secrets.DEPLOY_PORT || '8001' }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: HOST_PORT
+          timeout: 2m
+          script: |
+            echo "Running health check..."
+
+            # Wait for service to be ready (max 30 seconds)
+            for i in {1..6}; do
+              if curl -f -s -o /dev/null -w "%{http_code}" http://localhost:${HOST_PORT}/health 2>/dev/null | grep -q "200\|404"; then
+                echo "✓ Service is responding on port ${HOST_PORT}"
+                exit 0
+              fi
+              echo "Waiting for service... (${i}/6)"
+              sleep 5
+            done
+
+            echo "⚠ Health check timeout - service may still be starting"
+            echo "Check container logs with: docker logs we-mp-rss"
+
+            # Show recent logs for debugging
+            echo ""
+            echo "Recent container logs:"
+            docker logs we-mp-rss --tail 20
+
+  # Deployment summary - always runs to show final status
+  summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always()
+
+    steps:
+      - name: Generate deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Deployment status
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "### ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The we-mp-rss application has been deployed successfully." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.deploy.result }}" == "failure" ]; then
+            echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The deployment encountered errors. Please check the logs above." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ⚠️ Deployment Status: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Image Tag | \`${{ inputs.image_tag || 'latest' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Server | \`${{ secrets.SERVER_HOST }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployment Time | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered By | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${GITHUB_SHA:0:7}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "### 📝 Post-Deployment Steps" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. Verify the application is running:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   docker ps | grep we-mp-rss" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "2. Check application logs:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   docker logs -f we-mp-rss" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "3. Access the application:" >> $GITHUB_STEP_SUMMARY
+            echo "   - Open browser: \`http://${{ secrets.SERVER_HOST }}:${{ secrets.DEPLOY_PORT || '8001' }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### 🔧 Troubleshooting" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Common issues:" >> $GITHUB_STEP_SUMMARY
+            echo "- Verify all required secrets are configured" >> $GITHUB_STEP_SUMMARY
+            echo "- Check server SSH connectivity" >> $GITHUB_STEP_SUMMARY
+            echo "- Ensure Docker is running on the server" >> $GITHUB_STEP_SUMMARY
+            echo "- Verify registry credentials are valid" >> $GITHUB_STEP_SUMMARY
+            echo "- Check server disk space and resources" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "Workflow: \`${{ github.workflow }}\` | Run: #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
