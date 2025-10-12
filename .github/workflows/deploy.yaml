@@ -67,25 +67,31 @@ jobs:
         LIC_KEY: ${{ secrets.LIC_KEY }}
 
     - name: Setup SSH for config transfer
+      env:
+        JUMP_HOST: ${{ secrets.JUMP_HOST }}
+        JUMP_USER: ${{ secrets.JUMP_USER }}
+        TARGET_HOST: ${{ secrets.TARGET_HOST }}
+        TARGET_USER: ${{ secrets.TARGET_USER }}
+        TARGET_PORT: ${{ secrets.TARGET_PORT }}
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.VAR_ID_RSA_P }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -p ${{ secrets.TARGET_PORT }} ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
+        ssh-keyscan -p ${TARGET_PORT} ${JUMP_HOST} >> ~/.ssh/known_hosts
 
         # Setup SSH config for jump host
-        cat >> ~/.ssh/config << 'EOF'
+        cat >> ~/.ssh/config << EOF
         Host jump
-          HostName ${{ secrets.JUMP_HOST }}
-          User ${{ secrets.JUMP_USER }}
+          HostName ${JUMP_HOST}
+          User ${JUMP_USER}
           Port 22
           IdentityFile ~/.ssh/id_rsa
           StrictHostKeyChecking no
 
         Host target
-          HostName ${{ secrets.TARGET_HOST }}
-          User ${{ secrets.TARGET_USER }}
-          Port ${{ secrets.TARGET_PORT }}
+          HostName ${TARGET_HOST}
+          User ${TARGET_USER}
+          Port ${TARGET_PORT}
           ProxyJump jump
           IdentityFile ~/.ssh/id_rsa
           StrictHostKeyChecking no
