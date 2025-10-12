@@ -100,3 +100,70 @@ jobs:
             echo "### ⚠️ Build Failed" >> $GITHUB_STEP_SUMMARY
             echo "Please check the build logs above for error details." >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Send Slack notification
+        if: always()
+        run: |
+          if [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
+            STATUS="✅ Success"
+            COLOR="#36a64f"
+            MESSAGE="Docker build and push completed successfully"
+          elif [[ "${{ needs.build-and-push.result }}" == "skipped" ]]; then
+            STATUS="⏭️ Skipped"
+            COLOR="#808080"
+            MESSAGE="Docker build was skipped"
+          else
+            STATUS="❌ Failed"
+            COLOR="#FF0000"
+            MESSAGE="Docker build failed, please check logs"
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "attachments": [
+              {
+                "color": "${COLOR}",
+                "title": "${{ github.event.repository.name }} - Docker Build ${STATUS}",
+                "fields": [
+                  {
+                    "title": "Status",
+                    "value": "${MESSAGE}",
+                    "short": true
+                  },
+                  {
+                    "title": "Build Result",
+                    "value": "${{ needs.build-and-push.result }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Commit",
+                    "value": "${GITHUB_SHA:0:7}",
+                    "short": true
+                  },
+                  {
+                    "title": "Branch/Tag",
+                    "value": "${{ github.ref_name }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Triggered by",
+                    "value": "${{ github.actor }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Workflow",
+                    "value": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>",
+                    "short": true
+                  }
+                ],
+                "footer": "GitHub Actions",
+                "ts": $(date +%s)
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "${PAYLOAD}" \
+            "${{ secrets.VAR_SLACK_WEBHOOK_URL }}"

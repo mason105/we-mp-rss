@@ -87,33 +87,65 @@ jobs:
           echo "Deployment completed"
           rm -rf /tmp/${CI_PROJECT_NAME}
 
-    - name: Get wechat_id from github_id
-      id: wechat_id
-      uses: nanjingrd/gitid-2-wechatid-action@master
-      with:
-        github_id: ${{ github.actor }}
-
-    - name: Print wechat id
-      run: echo "The id is ${{ steps.wechat_id.outputs.wechat_id }}"
-
-    - name: Generate msg body
-      id: sync_msg_text
+    - name: Send Slack notification
       if: always()
-      run: echo "text=$( if [[ ${{ steps.main.outputs.return_code  }} -ne 0 ]]; then echo "Deploy FAILED, please contact admin"; else echo "Deploy succeed" ; fi )" >> $GITHUB_OUTPUT
+      run: |
+        if [[ ${{ steps.main.outputs.return_code }} -ne 0 ]]; then
+          STATUS="❌ FAILED"
+          COLOR="#FF0000"
+          MESSAGE="Deploy FAILED, please contact admin"
+        else
+          STATUS="✅ Success"
+          COLOR="#36a64f"
+          MESSAGE="Deploy succeeded"
+        fi
 
-    - name: Send message to wechat notify
-      uses: mason105/send_message_to_wechat_work_app@master
-      if: always()
-      with:
-        wechat_id: ${{ secrets.VAR_TENCENT_APP_ID }}
-        agent_id:  ${{ secrets.VAR_TENCENT_NOTIFY_KEY }}
-        agent_secret: ${{ secrets.VAR_TENCENT_NOTIFY_SECURITY }}
-        to_user: ${{ steps.wechat_id.outputs.wechat_id }}
-        msgtype: text
-        send_step: post
-        content:  |
-            ${{ github.event.repository.name }}
-            ${{ steps.sync_msg_text.outputs.text  }} (${{ steps.main.outputs.return_code  }})
-            ---log start---
-            ${{ steps.main.outputs.run_log }}
-            ---log end ---
+        PAYLOAD=$(cat <<EOF
+        {
+          "attachments": [
+            {
+              "color": "${COLOR}",
+              "title": "${{ github.event.repository.name }} - Deploy ${STATUS}",
+              "fields": [
+                {
+                  "title": "Status",
+                  "value": "${MESSAGE}",
+                  "short": true
+                },
+                {
+                  "title": "Return Code",
+                  "value": "${{ steps.main.outputs.return_code }}",
+                  "short": true
+                },
+                {
+                  "title": "Tag",
+                  "value": "${{ steps.tag.outputs.TAG }}",
+                  "short": true
+                },
+                {
+                  "title": "Commit",
+                  "value": "${{ steps.sha.outputs.sha7 }}",
+                  "short": true
+                },
+                {
+                  "title": "Triggered by",
+                  "value": "${{ github.actor }}",
+                  "short": true
+                },
+                {
+                  "title": "Workflow",
+                  "value": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>",
+                  "short": true
+                }
+              ],
+              "footer": "GitHub Actions",
+              "ts": $(date +%s)
+            }
+          ]
+        }
+        EOF
+        )
+
+        curl -X POST -H 'Content-type: application/json' \
+          --data "${PAYLOAD}" \
+          "${{ secrets.VAR_SLACK_WEBHOOK_URL }}"
