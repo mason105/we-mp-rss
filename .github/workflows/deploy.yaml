@@ -55,61 +55,6 @@ jobs:
       id: sha
       run: echo "sha7=$( echo $( git show-ref ${{ steps.tag.outputs.TAG }}  | cut -c1-7 ) )" >> $GITHUB_OUTPUT
 
-    - name: Generate production config
-      run: |
-        # Generate config from template using envsubst
-        envsubst < config.prod.template.yaml > /tmp/config.yaml
-        echo "✅ Production config generated from template"
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        SLACK_WEBHOOK: ${{ secrets.VAR_SLACK_WEBHOOK_URL }}
-        LIC_KEY: ${{ secrets.LIC_KEY }}
-
-    - name: Setup SSH for config transfer
-      env:
-        JUMP_HOST: ${{ secrets.JUMP_HOST }}
-        JUMP_USER: ${{ secrets.JUMP_USER }}
-        TARGET_HOST: ${{ secrets.TARGET_HOST }}
-        TARGET_USER: ${{ secrets.TARGET_USER }}
-        TARGET_PORT: ${{ secrets.TARGET_PORT }}
-      run: |
-        mkdir -p ~/.ssh
-        # Write SSH key using heredoc to preserve exact formatting
-        cat > ~/.ssh/id_rsa << 'SSHKEY'
-        ${{ secrets.VAR_ID_RSA_P }}
-        SSHKEY
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -p ${TARGET_PORT} ${JUMP_HOST} >> ~/.ssh/known_hosts
-
-        # Setup SSH config for jump host
-        cat >> ~/.ssh/config << EOF
-        Host jump
-          HostName ${JUMP_HOST}
-          User ${JUMP_USER}
-          Port 22
-          IdentityFile ~/.ssh/id_rsa
-          StrictHostKeyChecking no
-
-        Host target
-          HostName ${TARGET_HOST}
-          User ${TARGET_USER}
-          Port ${TARGET_PORT}
-          ProxyJump jump
-          IdentityFile ~/.ssh/id_rsa
-          StrictHostKeyChecking no
-        EOF
-
-    - name: Transfer config to server
-      run: |
-        # Ensure config directory exists on server
-        ssh target "mkdir -p /home/daqian/docker/we-mp-rss/config"
-
-        # Transfer generated config file
-        scp /tmp/config.yaml target:/home/daqian/docker/we-mp-rss/config/config.yaml
-
-        echo "✅ Config file transferred to server"
-
     - name: Deploy
       uses: nanjingrd/ssh-deploy-action@master
       id: main
@@ -131,6 +76,11 @@ jobs:
         CI_REGISTRY_URL: ${{ secrets.VAR_REGISTRY_URL }}
         REGISTRY_username: ${{ secrets.VAR_REGISTRY_USERNAME }}
         REGISTRY_password: ${{ secrets.VAR_REGISTRY_PASSWORD }}
+        # Config secrets for generation on server
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        SLACK_WEBHOOK: ${{ secrets.VAR_SLACK_WEBHOOK_URL }}
+        LIC_KEY: ${{ secrets.LIC_KEY }}
 
         COMMAND: |
           #/bin/bash
@@ -149,18 +99,44 @@ jobs:
           mkdir -p /home/daqian/docker/${CI_PROJECT_NAME}/data/pdf
           mkdir -p /home/daqian/docker/${CI_PROJECT_NAME}/data/markdown
 
-          docker login --username=${REGISTRY_username} ${CI_REGISTRY_URL} -p${REGISTRY_password}
-          docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
-          docker rm $( docker stop $( docker update --restart=no  $( docker ps -a -q --filter name=${DOCKER_CONTAINER_NAME}* --format='{{.ID}}'))) || true
-
           # Ensure config.yaml is a file, not a directory (cleanup edge case)
           if [ -d /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml ]; then
             echo "Config path is a directory, removing it..."
             rm -rf /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
           fi
 
-          # Config file is already deployed via scp in previous step
-          echo "Using config.yaml deployed from template"
+          # Generate config.yaml directly on server using environment variables
+          echo "Generating production config from environment variables..."
+          cat > /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml << 'CONFIGEOF'
+          server:
+            port: 8001
+            mode: release
+
+          database:
+            url: ${DATABASE_URL}
+
+          security:
+            secret_key: ${SECRET_KEY}
+
+          notifications:
+            slack_webhook: ${SLACK_WEBHOOK}
+
+          license:
+            key: ${LIC_KEY}
+          CONFIGEOF
+
+          # Substitute environment variables in the config file
+          export DATABASE_URL SECRET_KEY SLACK_WEBHOOK LIC_KEY
+          envsubst < /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml > /tmp/config.tmp
+          mv /tmp/config.tmp /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
+
+          echo "✅ Production config generated successfully"
+          echo "Config file first 5 lines:"
+          head -5 /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
+
+          docker login --username=${REGISTRY_username} ${CI_REGISTRY_URL} -p${REGISTRY_password}
+          docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
+          docker rm $( docker stop $( docker update --restart=no  $( docker ps -a -q --filter name=${DOCKER_CONTAINER_NAME}* --format='{{.ID}}'))) || true
 
           docker run  -itd  --name=${DOCKER_CONTAINER_NAME}_${CI_COMMIT_REF_NAME} --restart=always --add-host=host.docker.internal:host-gateway -e TZ=Asia/Shanghai -p 8002:8001 -v /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml:/app/config.yaml -v /home/daqian/docker/${CI_PROJECT_NAME}/data:/app/data  ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
 
