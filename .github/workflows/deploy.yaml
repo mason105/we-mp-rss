@@ -55,6 +55,58 @@ jobs:
       id: sha
       run: echo "sha7=$( echo $( git show-ref ${{ steps.tag.outputs.TAG }}  | cut -c1-7 ) )" >> $GITHUB_OUTPUT
 
+    - name: Generate production config
+      run: |
+        # Generate config from template using envsubst (runs on GitHub Actions runner)
+        envsubst < config.prod.template.yaml > /tmp/config.yaml
+        echo "✅ Production config generated from template"
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        SLACK_WEBHOOK: ${{ secrets.VAR_SLACK_WEBHOOK_URL }}
+        LIC_KEY: ${{ secrets.LIC_KEY }}
+
+    - name: Setup SSH for config transfer
+      env:
+        JUMP_HOST: ${{ secrets.JUMP_HOST }}
+        JUMP_USER: ${{ secrets.JUMP_USER }}
+        TARGET_HOST: ${{ secrets.TARGET_HOST }}
+        TARGET_USER: ${{ secrets.TARGET_USER }}
+        TARGET_PORT: ${{ secrets.TARGET_PORT }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.VAR_ID_RSA_P }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -p ${TARGET_PORT} ${JUMP_HOST} >> ~/.ssh/known_hosts
+
+        # Setup SSH config for jump host
+        cat >> ~/.ssh/config << EOF
+        Host jump
+          HostName ${JUMP_HOST}
+          User ${JUMP_USER}
+          Port 22
+          IdentityFile ~/.ssh/id_rsa
+          StrictHostKeyChecking no
+
+        Host target
+          HostName ${TARGET_HOST}
+          User ${TARGET_USER}
+          Port ${TARGET_PORT}
+          ProxyJump jump
+          IdentityFile ~/.ssh/id_rsa
+          StrictHostKeyChecking no
+        EOF
+
+    - name: Transfer config to server
+      run: |
+        # Ensure config directory exists on server
+        ssh target "mkdir -p /home/daqian/docker/we-mp-rss/config"
+
+        # Transfer generated config file
+        scp /tmp/config.yaml target:/home/daqian/docker/we-mp-rss/config/config.yaml
+
+        echo "✅ Config file transferred to server"
+
     - name: Deploy
       uses: nanjingrd/ssh-deploy-action@master
       id: main
@@ -76,11 +128,6 @@ jobs:
         CI_REGISTRY_URL: ${{ secrets.VAR_REGISTRY_URL }}
         REGISTRY_username: ${{ secrets.VAR_REGISTRY_USERNAME }}
         REGISTRY_password: ${{ secrets.VAR_REGISTRY_PASSWORD }}
-        # Config secrets for generation on server
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        SLACK_WEBHOOK: ${{ secrets.VAR_SLACK_WEBHOOK_URL }}
-        LIC_KEY: ${{ secrets.LIC_KEY }}
 
         COMMAND: |
           #/bin/bash
@@ -105,44 +152,8 @@ jobs:
             rm -rf /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
           fi
 
-          # Clone the repo to get config template
-          echo "Cloning repository to get config template..."
-          git clone --depth 1 --branch ${CI_COMMIT_REF_NAME} https://github.com/mason105/we-mp-rss.git /tmp/we-mp-rss-config || true
-
-          echo "Environment variables check:"
-          echo "DATABASE_URL length: ${#DATABASE_URL}"
-          echo "SECRET_KEY length: ${#SECRET_KEY}"
-          echo "SLACK_WEBHOOK length: ${#SLACK_WEBHOOK}"
-          echo "LIC_KEY length: ${#LIC_KEY}"
-
-          if [ ! -f /tmp/we-mp-rss-config/config.prod.template.yaml ]; then
-            echo "❌ Config template not found, using fallback"
-            # Fallback: create a minimal config
-            echo "app_name: we-mp-rss" > /tmp/config.yaml
-            echo "db: ${DATABASE_URL}" >> /tmp/config.yaml
-            echo "secret: ${SECRET_KEY}" >> /tmp/config.yaml
-            echo "notice:" >> /tmp/config.yaml
-            echo "  custom: \"${SLACK_WEBHOOK}\"" >> /tmp/config.yaml
-            echo "safe:" >> /tmp/config.yaml
-            echo "  lic_key: \"${LIC_KEY}\"" >> /tmp/config.yaml
-            echo "port: 8001" >> /tmp/config.yaml
-            echo "debug: False" >> /tmp/config.yaml
-          else
-            echo "Generating config from template using sed replacement..."
-            # Use sed for replacement instead of envsubst
-            cp /tmp/we-mp-rss-config/config.prod.template.yaml /tmp/config.yaml
-            sed -i "s|\${DATABASE_URL}|${DATABASE_URL}|g" /tmp/config.yaml
-            sed -i "s|\${SECRET_KEY}|${SECRET_KEY}|g" /tmp/config.yaml
-            sed -i "s|\${SLACK_WEBHOOK}|${SLACK_WEBHOOK}|g" /tmp/config.yaml
-            sed -i "s|\${LIC_KEY}|${LIC_KEY}|g" /tmp/config.yaml
-          fi
-
-          # Move config to deployment location
-          cp /tmp/config.yaml /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
-
-          echo "✅ Production config generated successfully"
-          echo "Config file lines 18-25 (db config):"
-          sed -n '18,25p' /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
+          # Config file is already deployed via scp in previous step
+          echo "✅ Using config.yaml deployed from template via scp"
 
           docker login --username=${REGISTRY_username} ${CI_REGISTRY_URL} -p${REGISTRY_password}
           docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
