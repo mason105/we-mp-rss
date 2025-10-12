@@ -55,57 +55,19 @@ jobs:
       id: sha
       run: echo "sha7=$( echo $( git show-ref ${{ steps.tag.outputs.TAG }}  | cut -c1-7 ) )" >> $GITHUB_OUTPUT
 
-    - name: Generate production config
+    - name: Generate production config as environment variable
       run: |
-        # Generate config from template using envsubst (runs on GitHub Actions runner)
-        envsubst < config.prod.template.yaml > /tmp/config.yaml
-        echo "✅ Production config generated from template"
+        # Generate config from template and export as env var for use in COMMAND
+        CONFIG_CONTENT=$(envsubst < config.prod.template.yaml)
+        echo "CONFIG_YAML<<EOF" >> $GITHUB_ENV
+        echo "$CONFIG_CONTENT" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+        echo "✅ Production config generated and stored in environment"
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         SLACK_WEBHOOK: ${{ secrets.VAR_SLACK_WEBHOOK_URL }}
         LIC_KEY: ${{ secrets.LIC_KEY }}
-
-    - name: Setup SSH for config transfer
-      env:
-        JUMP_HOST: ${{ secrets.JUMP_HOST }}
-        JUMP_USER: ${{ secrets.JUMP_USER }}
-        TARGET_HOST: ${{ secrets.TARGET_HOST }}
-        TARGET_USER: ${{ secrets.TARGET_USER }}
-        TARGET_PORT: ${{ secrets.TARGET_PORT }}
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.VAR_ID_RSA_P }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -p ${TARGET_PORT} ${JUMP_HOST} >> ~/.ssh/known_hosts
-
-        # Setup SSH config for jump host
-        cat >> ~/.ssh/config << EOF
-        Host jump
-          HostName ${JUMP_HOST}
-          User ${JUMP_USER}
-          Port 22
-          IdentityFile ~/.ssh/id_rsa
-          StrictHostKeyChecking no
-
-        Host target
-          HostName ${TARGET_HOST}
-          User ${TARGET_USER}
-          Port ${TARGET_PORT}
-          ProxyJump jump
-          IdentityFile ~/.ssh/id_rsa
-          StrictHostKeyChecking no
-        EOF
-
-    - name: Transfer config to server
-      run: |
-        # Ensure config directory exists on server
-        ssh target "mkdir -p /home/daqian/docker/we-mp-rss/config"
-
-        # Transfer generated config file
-        scp /tmp/config.yaml target:/home/daqian/docker/we-mp-rss/config/config.yaml
-
-        echo "✅ Config file transferred to server"
 
     - name: Deploy
       uses: nanjingrd/ssh-deploy-action@master
@@ -128,6 +90,8 @@ jobs:
         CI_REGISTRY_URL: ${{ secrets.VAR_REGISTRY_URL }}
         REGISTRY_username: ${{ secrets.VAR_REGISTRY_USERNAME }}
         REGISTRY_password: ${{ secrets.VAR_REGISTRY_PASSWORD }}
+
+        CONFIG_YAML: ${{ env.CONFIG_YAML }}
 
         COMMAND: |
           #/bin/bash
@@ -152,8 +116,11 @@ jobs:
             rm -rf /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
           fi
 
-          # Config file is already deployed via scp in previous step
-          echo "✅ Using config.yaml deployed from template via scp"
+          # Write config content from environment variable to file
+          cat > /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml << 'CONFIGEOF'
+          ${CONFIG_YAML}
+          CONFIGEOF
+          echo "✅ Config file deployed from template (generated in CI)"
 
           docker login --username=${REGISTRY_username} ${CI_REGISTRY_URL} -p${REGISTRY_password}
           docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
