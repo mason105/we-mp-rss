@@ -75,7 +75,8 @@ jobs:
         TARGET_PORT: ${{ secrets.TARGET_PORT }}
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.VAR_ID_RSA_P }}" > ~/.ssh/id_rsa
+        # Use printf with -e flag to properly handle newlines in the SSH key
+        printf '%s\n' "${{ secrets.VAR_ID_RSA_P }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -p ${TARGET_PORT} ${JUMP_HOST} >> ~/.ssh/known_hosts
 
