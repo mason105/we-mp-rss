@@ -1,0 +1,117 @@
+app_name: we-mp-rss
+server:
+   #服务名称
+   name: we-mp-rss
+   #前端显示名称
+   web_name: WeRSS微信公众号订阅助手
+   #过期是否发送授权二维通知 默认True
+   send_code: True
+   #二维通知标题
+   code_title: WeRSS
+   #启动JOB定时任务，默认为True
+   enable_job: True
+   #代码修改自动重启服务，默认为False
+   auto_reload: False
+   #最大线程数 默认2个线程，不建议超过4个线程
+   threads: 4
+
+#数据库连接 例如db:  mysql+pymysql://<username>:<password>@<host>/we-rss?charset=utf8mb4
+#PostgreSQL 连接示例: postgresql://<username>:<password>@<host>/<database>
+#需要注意数据库连接字符串的格式，如果是sqlite数据库，则使用sqlite:///路径的形式，如果是mysql数据库，
+#则使用mysql+pymysql://<username>:<password>@<host>/<database>?charset=<数据库编码>的形式
+db: ${DATABASE_URL}
+
+#通知
+notice:
+  #通知方式，可选dingding、wechat、feishu、custom
+  dingding: ""
+  wechat: ""
+  feishu: ""
+  custom: "${SLACK_WEBHOOK}"
+
+secret: ${SECRET_KEY}
+user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36/WeRss
+
+#定时任务执行每篇稿件间隔时间 单位秒 默认10s 允许值 1-60秒之间
+interval: 10
+
+webhook:
+  #文章内容的发送格式(默认使用html格式，可选text、markdown)
+  content_format: html
+
+#API服务端口
+port: 8001
+#调试模式
+debug: False
+
+
+#最大页数 第一次添加 采集的页数默认5页
+max_page: 5
+
+rss:
+  #RSS域名地址：如https://www.xxx.com/
+  base_url: https://werss.cprd.tech
+  #是否为本地RSS链接，默认True，当为False时直接出外部链接
+  local: True
+  #RSS标题
+  title: WeRSS微信公众号订阅
+  #RSS描述
+  description: 微信公众号RSS订阅服务
+  #RSS封面
+  cover: ""
+  #是否显示全文 默认False
+  full_context: True
+  #是否添加封面图片 默认False
+  add_cover: True
+  #RSS正文是否启用 CDATA
+  cdata: False
+  #RSS分页大小 默认10
+  page_size: 30
+
+#登录会话有效时长 单位分钟 默认4320分钟 3天
+token_expire_minutes: 4320
+
+cache:
+  #缓存目录，默认为./data/cache
+  dir: ./data/cache
+
+article:
+  #是否真实删除文章，默认False，如果为True，则会删除数据库中的记录
+  true_delete: False
+
+gather:
+  #是否采集内容  默认True
+  content: True
+  #采集模式，web模式（可采集到发布链接)，api模式（可采集临时链接），app模式（采集最新消息）
+  model: app
+  #是否自动检查未采集文章内容，默认False
+  content_auto_check: False
+  #自动检查未采集文章内容的时间间隔 单位秒默认59分钟 允许值 1-59分钟之间 默认59分钟
+  content_auto_interval: 59
+  #内容修正模式，默认web 允许值 web、api
+  content_mode: web
+
+#安全配置
+safe:
+    # 需要隐藏的配置信息，用逗号分隔 如：db,secret,token等
+    hide_config: "db,secret,token,notice.custom"
+    # 授权加密KEY
+    lic_key: "${LIC_KEY}"
+
+log:
+  #日志文件路径，默认为空字符串，表示不输出到文件。如果要输出到文件，可以指定一个路径如：/var/log/we-mp-rss.log 如果为空就不纪录
+   file: ""
+  #日志级别，默认为INFO，可选DEBUG, INFO, WARNING, ERROR, CRITICAL
+   level: INFO
+
+export:
+   pdf:
+    #是否启用PDF导出功能 默认False
+    enable: False
+    #PDF导出目录 默认./data/pdf
+    dir: ./data/pdf
+   markdown:
+    #是否启用markdown导出功能 默认False
+    enable: False
+    #markdown导出目录 默认./data/markdown
+    dir: ./data/markdown

@@ -16,12 +16,90 @@ jobs:
     - name: Get the tag
       id: tag
       run: |
-        if [ ${GITHUB_REF#refs/*/} == RC* ]; then export LATEST_TAG=${GITHUB_REF#refs/*/}; else export LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`); fi
-        echo "TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+        # Tag Selection Logic:
+        # - If triggered from a tag (via "Use workflow from" > Tags tab), deploy that specific tag
+        # - If triggered from a branch (via "Use workflow from" > Branches tab), deploy the latest RC tag
+        # This allows selective deployment or automatic latest deployment
+
+        if [[ ${GITHUB_REF} == refs/tags/* ]]; then
+          # User selected a specific tag from the dropdown
+          SELECTED_TAG=${GITHUB_REF#refs/tags/}
+          echo "📌 Deploying user-selected tag: $SELECTED_TAG"
+        else
+          # User selected a branch, auto-detect latest RC tag
+          LATEST_RC=$(git tag -l 'RC.*' --sort=-version:refname | head -n1)
+
+          if [ -n "$LATEST_RC" ]; then
+            SELECTED_TAG="$LATEST_RC"
+            echo "🔄 Auto-detected latest RC tag: $SELECTED_TAG"
+          else
+            echo "❌ ERROR: No RC tags found in repository"
+            echo "Available tags:"
+            git tag -l | tail -20
+            exit 1
+          fi
+        fi
+
+        # Validate that the selected tag exists
+        if git rev-parse "refs/tags/$SELECTED_TAG" >/dev/null 2>&1; then
+          echo "✅ Tag $SELECTED_TAG exists and will be deployed"
+          echo "TAG=$SELECTED_TAG" >> $GITHUB_OUTPUT
+        else
+          echo "❌ ERROR: Tag $SELECTED_TAG does not exist in repository"
+          echo "Available tags:"
+          git tag -l | tail -20
+          exit 1
+        fi
 
     - name: Get short SHA
       id: sha
       run: echo "sha7=$( echo $( git show-ref ${{ steps.tag.outputs.TAG }}  | cut -c1-7 ) )" >> $GITHUB_OUTPUT
+
+    - name: Generate production config
+      run: |
+        # Generate config from template using envsubst
+        envsubst < config.prod.template.yaml > /tmp/config.yaml
+        echo "✅ Production config generated from template"
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        SLACK_WEBHOOK: ${{ secrets.VAR_SLACK_WEBHOOK_URL }}
+        LIC_KEY: ${{ secrets.LIC_KEY }}
+
+    - name: Setup SSH for config transfer
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.VAR_ID_RSA_P }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -p ${{ secrets.TARGET_PORT }} ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
+
+        # Setup SSH config for jump host
+        cat >> ~/.ssh/config << 'EOF'
+        Host jump
+          HostName ${{ secrets.JUMP_HOST }}
+          User ${{ secrets.JUMP_USER }}
+          Port 22
+          IdentityFile ~/.ssh/id_rsa
+          StrictHostKeyChecking no
+
+        Host target
+          HostName ${{ secrets.TARGET_HOST }}
+          User ${{ secrets.TARGET_USER }}
+          Port ${{ secrets.TARGET_PORT }}
+          ProxyJump jump
+          IdentityFile ~/.ssh/id_rsa
+          StrictHostKeyChecking no
+        EOF
+
+    - name: Transfer config to server
+      run: |
+        # Ensure config directory exists on server
+        ssh target "mkdir -p /home/daqian/docker/we-mp-rss/config"
+
+        # Transfer generated config file
+        scp /tmp/config.yaml target:/home/daqian/docker/we-mp-rss/config/config.yaml
+
+        echo "✅ Config file transferred to server"
 
     - name: Deploy
       uses: nanjingrd/ssh-deploy-action@master
@@ -66,17 +144,14 @@ jobs:
           docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
           docker rm $( docker stop $( docker update --restart=no  $( docker ps -a -q --filter name=${DOCKER_CONTAINER_NAME}* --format='{{.ID}}'))) || true
 
-          # Ensure config.yaml is a file, not a directory
+          # Ensure config.yaml is a file, not a directory (cleanup edge case)
           if [ -d /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml ]; then
             echo "Config path is a directory, removing it..."
             rm -rf /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
           fi
-          if [ -f /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml ]; then
-            echo "Config file exists, removing to ensure clean state..."
-            rm -f /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
-          fi
-          echo "Creating default empty config file..."
-          echo "" > /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
+
+          # Config file is already deployed via scp in previous step
+          echo "Using config.yaml deployed from template"
 
           docker run  -itd  --name=${DOCKER_CONTAINER_NAME}_${CI_COMMIT_REF_NAME} --restart=always --add-host=host.docker.internal:host-gateway -e TZ=Asia/Shanghai -p 8002:8001 -v /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml:/app/config.yaml -v /home/daqian/docker/${CI_PROJECT_NAME}/data:/app/data  ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
 
