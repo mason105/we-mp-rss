@@ -109,6 +109,12 @@ jobs:
           echo "Cloning repository to get config template..."
           git clone --depth 1 --branch ${CI_COMMIT_REF_NAME} https://github.com/mason105/we-mp-rss.git /tmp/we-mp-rss-config || true
 
+          echo "Environment variables check:"
+          echo "DATABASE_URL length: ${#DATABASE_URL}"
+          echo "SECRET_KEY length: ${#SECRET_KEY}"
+          echo "SLACK_WEBHOOK length: ${#SLACK_WEBHOOK}"
+          echo "LIC_KEY length: ${#LIC_KEY}"
+
           if [ ! -f /tmp/we-mp-rss-config/config.prod.template.yaml ]; then
             echo "❌ Config template not found, using fallback"
             # Fallback: create a minimal config
@@ -116,23 +122,27 @@ jobs:
             echo "db: ${DATABASE_URL}" >> /tmp/config.yaml
             echo "secret: ${SECRET_KEY}" >> /tmp/config.yaml
             echo "notice:" >> /tmp/config.yaml
-            echo "  custom: ${SLACK_WEBHOOK}" >> /tmp/config.yaml
+            echo "  custom: \"${SLACK_WEBHOOK}\"" >> /tmp/config.yaml
             echo "safe:" >> /tmp/config.yaml
-            echo "  lic_key: ${LIC_KEY}" >> /tmp/config.yaml
+            echo "  lic_key: \"${LIC_KEY}\"" >> /tmp/config.yaml
             echo "port: 8001" >> /tmp/config.yaml
             echo "debug: False" >> /tmp/config.yaml
           else
-            echo "Generating config from template..."
-            export DATABASE_URL SECRET_KEY SLACK_WEBHOOK LIC_KEY
-            envsubst < /tmp/we-mp-rss-config/config.prod.template.yaml > /tmp/config.yaml
+            echo "Generating config from template using sed replacement..."
+            # Use sed for replacement instead of envsubst
+            cp /tmp/we-mp-rss-config/config.prod.template.yaml /tmp/config.yaml
+            sed -i "s|\${DATABASE_URL}|${DATABASE_URL}|g" /tmp/config.yaml
+            sed -i "s|\${SECRET_KEY}|${SECRET_KEY}|g" /tmp/config.yaml
+            sed -i "s|\${SLACK_WEBHOOK}|${SLACK_WEBHOOK}|g" /tmp/config.yaml
+            sed -i "s|\${LIC_KEY}|${LIC_KEY}|g" /tmp/config.yaml
           fi
 
           # Move config to deployment location
           cp /tmp/config.yaml /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
 
           echo "✅ Production config generated successfully"
-          echo "Config file first 10 lines:"
-          head -10 /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
+          echo "Config file lines 18-25 (db config):"
+          sed -n '18,25p' /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
 
           docker login --username=${REGISTRY_username} ${CI_REGISTRY_URL} -p${REGISTRY_password}
           docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
