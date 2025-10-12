@@ -105,34 +105,34 @@ jobs:
             rm -rf /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
           fi
 
-          # Generate config.yaml directly on server using environment variables
-          echo "Generating production config from environment variables..."
-          cat > /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml << 'CONFIGEOF'
-          server:
-            port: 8001
-            mode: release
+          # Clone the repo to get config template
+          echo "Cloning repository to get config template..."
+          git clone --depth 1 --branch ${CI_COMMIT_REF_NAME} https://github.com/mason105/we-mp-rss.git /tmp/we-mp-rss-config || true
 
-          database:
-            url: ${DATABASE_URL}
+          if [ ! -f /tmp/we-mp-rss-config/config.prod.template.yaml ]; then
+            echo "❌ Config template not found, using fallback"
+            # Fallback: create a minimal config
+            echo "app_name: we-mp-rss" > /tmp/config.yaml
+            echo "db: ${DATABASE_URL}" >> /tmp/config.yaml
+            echo "secret: ${SECRET_KEY}" >> /tmp/config.yaml
+            echo "notice:" >> /tmp/config.yaml
+            echo "  custom: ${SLACK_WEBHOOK}" >> /tmp/config.yaml
+            echo "safe:" >> /tmp/config.yaml
+            echo "  lic_key: ${LIC_KEY}" >> /tmp/config.yaml
+            echo "port: 8001" >> /tmp/config.yaml
+            echo "debug: False" >> /tmp/config.yaml
+          else
+            echo "Generating config from template..."
+            export DATABASE_URL SECRET_KEY SLACK_WEBHOOK LIC_KEY
+            envsubst < /tmp/we-mp-rss-config/config.prod.template.yaml > /tmp/config.yaml
+          fi
 
-          security:
-            secret_key: ${SECRET_KEY}
-
-          notifications:
-            slack_webhook: ${SLACK_WEBHOOK}
-
-          license:
-            key: ${LIC_KEY}
-          CONFIGEOF
-
-          # Substitute environment variables in the config file
-          export DATABASE_URL SECRET_KEY SLACK_WEBHOOK LIC_KEY
-          envsubst < /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml > /tmp/config.tmp
-          mv /tmp/config.tmp /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
+          # Move config to deployment location
+          cp /tmp/config.yaml /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
 
           echo "✅ Production config generated successfully"
-          echo "Config file first 5 lines:"
-          head -5 /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
+          echo "Config file first 10 lines:"
+          head -10 /home/daqian/docker/${CI_PROJECT_NAME}/config/config.yaml
 
           docker login --username=${REGISTRY_username} ${CI_REGISTRY_URL} -p${REGISTRY_password}
           docker pull ${CI_REGISTRY_URL}/mason105/${DOCKER_IMG_NAME}:${DOCKER_IMG_TAG}
