@@ -3,7 +3,7 @@
 ## 当前策略
 
 这个仓库是上游的 fork，我们只保留以下两个 workflow：
-- `test-docker-build.yaml` - Docker 镜像构建和测试
+- `docker-build.yaml` - Docker 镜像构建和推送
 - `deploy.yaml` - 部署到服务器
 
 **我们使用 Git Sparse-Checkout 技术自动过滤其他 workflow 文件。**
@@ -23,7 +23,7 @@ Sparse-Checkout 是 Git 的原生功能，允许你只检出仓库的一部分�
 .github/*
 \!.github/workflows/*
 /.github/workflows/deploy.yaml
-/.github/workflows/test-docker-build.yaml
+/.github/workflows/docker-build.yaml
 ```
 
 这个配置的含义：
@@ -31,7 +31,7 @@ Sparse-Checkout 是 Git 的原生功能，允许你只检出仓库的一部分�
 - `.github/*` - 包含 .github 目录下的所有内容
 - `\!.github/workflows/*` - **排除** workflows 目录下的所有文件
 - `/.github/workflows/deploy.yaml` - 但**保留** deploy.yaml
-- `/.github/workflows/test-docker-build.yaml` - 但**保留** test-docker-build.yaml
+- `/.github/workflows/docker-build.yaml` - 但**保留** docker-build.yaml
 
 ### 从上游同步代码
 
@@ -81,11 +81,11 @@ git sparse-checkout disable
 
 ## 注意事项
 
-如果上游更新了 `test-docker-build.yaml` 或 `deploy.yaml`，需要手动检查并合并有用的更改：
+如果上游更新了 `docker-build.yaml` 或 `deploy.yaml`，需要手动检查并合并有用的更改：
 
 ```bash
 # 查看上游的更改
-git show upstream/main:.github/workflows/test-docker-build.yaml
+git show upstream/main:.github/workflows/docker-build.yaml
 git show upstream/main:.github/workflows/deploy.yaml
 
 # 如果需要，手动应用更改
