@@ -52,7 +52,7 @@ rss:
   #RSS域名地址：如https://www.xxx.com/
   base_url: https://werss.cprd.tech
   #是否为本地RSS链接，默认True，当为False时直接出外部链接
-  local: True
+  local: False
   #RSS标题
   title: WeRSS微信公众号订阅
   #RSS描述
