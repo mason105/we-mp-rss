@@ -67,6 +67,7 @@ jobs:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         SLACK_WEBHOOK: ${{ secrets.VAR_SLACK_WEBHOOK_URL }}
+        WECHAT_WEBHOOK: ${{ secrets.WECHAT_WEBHOOK }}
         LIC_KEY: ${{ secrets.LIC_KEY }}
 
     - name: Deploy

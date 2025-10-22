@@ -25,7 +25,7 @@ db: ${DATABASE_URL}
 notice:
   #通知方式，可选dingding、wechat、feishu、custom
   dingding: ""
-  wechat: ""
+  wechat: "${WECHAT_WEBHOOK}"
   feishu: ""
   custom: "${SLACK_WEBHOOK}"
 
@@ -94,7 +94,7 @@ gather:
 #安全配置
 safe:
     # 需要隐藏的配置信息，用逗号分隔 如：db,secret,token等
-    hide_config: "db,secret,token,notice.custom"
+    hide_config: "db,secret,token,notice.custom,notice.wechat"
     # 授权加密KEY
     lic_key: "${LIC_KEY}"
 
